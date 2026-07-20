@@ -3,8 +3,12 @@
     <q-header elevated class="text-primary bg-white q-pa-sm q-px-xl navbar" :style="navbarStyle">
       <q-toolbar>
         <q-img :src="logo" width="120px" fit="contain" />
-
         <q-space />
+        <div class="navbar-menu q-mx-lg">
+          <q-btn flat no-caps label="Laporkan Kondisi" class="menu-btn" to="/laporkan" />
+          <q-btn flat no-caps label="Peta Wisata" class="menu-btn" to="/peta" />
+          <q-btn flat no-caps label="Tentang Sistem" class="menu-btn" to="/tentang" />
+        </div>
 
         <q-btn
           dense
@@ -12,6 +16,7 @@
           style="border-radius: 12px"
           color="primary"
           label="Login Admin"
+          to="/login"
           unelevated
           no-caps
         />
@@ -40,13 +45,13 @@ const navbarStyle = computed(() => {
 
   return {
     opacity: 1 - progress,
-    transform: `translateY(-${progress * 100}%)`
+    transform: `translateY(-${progress * 100}%)`,
   }
 })
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, {
-    passive: true
+    passive: true,
   })
 })
 
@@ -54,6 +59,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
+
 <style scoped>
 .navbar {
   transition:
