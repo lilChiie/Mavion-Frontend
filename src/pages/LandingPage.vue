@@ -44,6 +44,7 @@
                 no-caps
                 unelevated
                 style="border-radius: 12px"
+                @click="mapDialogOpen = true"
               />
             </div>
           </div>
@@ -129,6 +130,7 @@
             rounded
             label="Lihat Peta Selengkapnya"
             icon-right="arrow_forward"
+            @click="mapDialogOpen = true"
           />
 
           <div class="row q-col-gutter-sm q-mt-md q-pa-sm legend-wrapper">
@@ -180,6 +182,7 @@
                   rounded
                   color="primary"
                   label="Lihat Detail"
+                  @click="mapDialogOpen = true"
                 />
               </q-card-section>
             </q-card>
@@ -325,15 +328,21 @@
 
     <!-- Footer -->
     <FooterComponent />
+
+    <!-- Component Modal Peta Kondisi Wisata -->
+    <MapDialogModal v-model="mapDialogOpen" />
   </q-page>
 </template>
 
 <script setup>
 import FooterComponent from '../components/FooterComponent.vue'
+import MapDialogModal from '../components/MapDialogModal.vue'
 import { Motion } from 'motion-v'
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+const mapDialogOpen = ref(false)
 
 const laporanTerbaru = [
   {

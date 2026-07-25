@@ -41,7 +41,7 @@
 
       <div class="footer-col footer-love">
         <div class="footer-col-title">
-          Dibuat dengan <span class="heart">♥</span> untuk Danau Tobe
+          Dibuat dengan <span class="heart">♥</span> untuk Danau Toba
         </div>
         <q-img src="../assets/Logo.png" width="100px" fit="contain" class="q-mt-sm" />
       </div>
