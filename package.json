@@ -2,7 +2,7 @@
   "name": "mavion",
   "version": "0.0.1",
   "description": "A Quasar Project",
-  "productName": "Mavion App",
+  "productName": "Mahorbasa",
   "author": "Niati <niatiniati545@gmail.com>",
   "type": "module",
   "private": true,
@@ -16,13 +16,15 @@
   "dependencies": {
     "@quasar/extras": "^2.0.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "apexcharts": "^6.5.0",
     "leaflet": "^1.9.4",
     "motion": "^12.41.0",
     "motion-v": "^2.3.0",
     "pinia": "^3.0.1",
     "quasar": "^2.20.0",
     "vue": "^3.5.22",
-    "vue-router": "^5.0.6"
+    "vue-router": "^5.0.6",
+    "vue3-apexcharts": "^1.11.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

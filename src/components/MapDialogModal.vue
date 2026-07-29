@@ -7,7 +7,6 @@
     @hide="onDialogHide"
   >
     <q-card class="map-dialog-card column no-wrap q-pa-lg q-px-xl">
-      <!-- Header -->
       <div class="row items-center justify-between q-pb-sm dialog-header">
         <div class="col-12 col-md-4">
           <div class="text-subtitle2 text-primary font-weight-bold">Peta Kondisi Wisata</div>
@@ -61,9 +60,10 @@
         </div>
       </div>
 
-      <!-- Body -->
-      <div class="row col no-wrap items-stretch q-col-gutter-md dialog-content" style="min-height: 0">
-        <!-- Left List -->
+      <div
+        class="row col no-wrap items-stretch q-col-gutter-md dialog-content"
+        style="min-height: 0"
+      >
         <div class="col-12 col-md-4 column left-dialog-panel full-height" style="min-height: 0">
           <div class="text-subtitle1 text-weight-bold q-mb-sm">Laporan Terbaru</div>
           <div class="col overflow-auto report-dialog-list q-pr-xs">
@@ -96,7 +96,6 @@
           </div>
         </div>
 
-        <!-- Right Map -->
         <div class="col-12 col-md-8 column right-dialog-panel full-height" style="min-height: 0">
           <div
             class="col dialog-map-wrapper full-width relative-position"
@@ -104,38 +103,14 @@
           >
             <div ref="dialogMapContainer" class="dialog-map full-height full-width"></div>
 
-            <!-- Destination Overlay Card -->
             <q-card flat class="dialog-destination-card shadow-4">
-              <q-img :src="selectedDest.img" height="110px" style="border-radius: 14px 14px 0 0" />
               <q-card-section class="q-pa-sm">
                 <div class="text-subtitle1 text-weight-bold">{{ selectedDest.name }}</div>
                 <div class="text-caption text-orange text-weight-medium">
                   ● {{ selectedDest.status }}
                 </div>
                 <div class="text-caption text-grey-6 q-mb-xs">3 laporan terbaru</div>
-                <div class="row q-col-gutter-xs q-mb-sm">
-                  <div class="col-4">
-                    <q-img
-                      src="https://picsum.photos/seed/toba1/100/100"
-                      ratio="1"
-                      style="border-radius: 8px"
-                    />
-                  </div>
-                  <div class="col-4">
-                    <q-img
-                      src="https://picsum.photos/seed/toba2/100/100"
-                      ratio="1"
-                      style="border-radius: 8px"
-                    />
-                  </div>
-                  <div class="col-4">
-                    <q-img
-                      src="https://picsum.photos/seed/toba3/100/100"
-                      ratio="1"
-                      style="border-radius: 8px"
-                    />
-                  </div>
-                </div>
+
                 <q-btn
                   outline
                   rounded
@@ -143,6 +118,7 @@
                   label="Lihat Detail"
                   class="full-width text-weight-bold"
                   no-caps
+                  @click="goToDetail"
                 />
               </q-card-section>
             </q-card>
@@ -155,8 +131,11 @@
 
 <script setup>
 import { ref, computed, nextTick, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+const router = useRouter()
 
 const props = defineProps({
   modelValue: {
@@ -214,22 +193,28 @@ const destinationList = ref([
 ])
 
 const selectedDest = ref(destinationList.value[0])
-
 const dialogMapContainer = ref(null)
 const dialogMap = ref(null)
 
-const onDialogHide = () => {
+function goToDetail() {
+  isOpen.value = false
+  router.push({
+    path: '/destinasi-detail',
+    query: {
+      name: selectedDest.value.name,
+      status: selectedDest.value.status,
+    },
+  })
+}
+
+function onDialogHide() {
   if (dialogMap.value) {
     dialogMap.value.remove()
     dialogMap.value = null
   }
 }
 
-onUnmounted(() => {
-  onDialogHide()
-})
-
-const onDialogMapShow = async () => {
+async function onDialogMapShow() {
   await nextTick()
   setTimeout(() => {
     if (!dialogMapContainer.value) return
@@ -244,7 +229,6 @@ const onDialogMapShow = async () => {
         maxZoom: 19,
       }).addTo(dialogMap.value)
 
-      // Danau Toba polygon overlay
       const lakePolygon = [
         [2.85, 98.65],
         [2.92, 98.85],
@@ -261,12 +245,18 @@ const onDialogMapShow = async () => {
         fillOpacity: 0.35,
       }).addTo(dialogMap.value)
 
-      // Leaflet marker with badge tooltip
-      const marker = L.marker([2.6847, 98.8722]).addTo(dialogMap.value)
-      marker.bindTooltip('Perlu Perhatian', {
-        permanent: true,
-        direction: 'top',
-        className: 'map-tooltip-badge',
+      destinationList.value.forEach((item) => {
+        if (item.coords) {
+          const marker = L.marker(item.coords).addTo(dialogMap.value)
+          marker.bindTooltip(item.name, {
+            permanent: true,
+            direction: 'top',
+            className: 'map-tooltip-badge',
+          })
+          marker.on('click', () => {
+            selectedDest.value = item
+          })
+        }
       })
     }
     dialogMap.value.invalidateSize()
@@ -275,6 +265,10 @@ const onDialogMapShow = async () => {
     }, 300)
   }, 150)
 }
+
+onUnmounted(() => {
+  onDialogHide()
+})
 </script>
 
 <style scoped>

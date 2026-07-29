@@ -7,20 +7,13 @@
           Sistem pemantauan kondisi sampah di destinasi wisata Danau Toba yang berbasis AI.
           Berfungsi untuk membantu masyarakat dan pemerintah untuk menjaga keindahan Danau Toba.
         </p>
-        <q-btn
-          flat
-          dense
-          round
-          icon="img:https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg"
-          size="sm"
-        />
       </div>
 
       <div class="footer-col">
         <div class="footer-col-title">Navigasi</div>
-        <a href="#" class="footer-link">Laporkan Kondisi</a>
-        <a href="#" class="footer-link">Peta Wisata</a>
-        <a href="#" class="footer-link">Tentang Sistem</a>
+        <router-link to="/laporkan" class="footer-link">Laporkan Kondisi</router-link>
+        <router-link to="/peta" class="footer-link">Peta Wisata</router-link>
+        <router-link to="/tentang" class="footer-link">Tentang Sistem</router-link>
       </div>
 
       <div class="footer-col">
@@ -53,8 +46,7 @@
   </footer>
 </template>
 
-<script setup>
-</script>
+<script setup></script>
 
 <style scoped>
 .site-footer {
@@ -129,7 +121,6 @@
   padding-top: 8px;
 }
 
-/* Responsive Breakpoints */
 @media (max-width: 1200px) {
   .site-footer {
     padding: 48px 40px 24px;

@@ -6,9 +6,9 @@
 
       <div class="hero-content">
         <Motion
-          :initial="{ opacity: 0, y: 30 }"
+          :initial="{ opacity: 0, y: 20 }"
           :animate="{ opacity: 1, y: 0 }"
-          :transition="{ duration: 0.8 }"
+          :transition="{ duration: 0.6, ease: 'easeOut' }"
         >
           <div class="hero-left">
             <h1 class="font-instrument">
@@ -34,6 +34,7 @@
                 style="border-radius: 12px"
                 unelevated
                 size="md"
+                to="/laporkan"
               />
 
               <q-btn
@@ -44,286 +45,284 @@
                 no-caps
                 unelevated
                 style="border-radius: 12px"
-                @click="mapDialogOpen = true"
+                to="/peta"
               />
             </div>
           </div>
         </Motion>
+
         <Motion
-          :initial="{ opacity: 0, x: 40 }"
-          :animate="{ opacity: 1, x: 0 }"
+          :initial="{ opacity: 0, y: 20 }"
+          :animate="{ opacity: 1, y: 0 }"
           :transition="{
-            duration: 0.8,
-            delay: 0.2,
+            duration: 0.6,
+            delay: 0.15,
+            ease: 'easeOut',
           }"
         >
           <div class="hero-right">
             <q-card flat class="map-card">
-              <q-img src="../assets/peta.png" fit="cover"> </q-img>
+              <q-img src="../../assets/peta.png" fit="cover"> </q-img>
             </q-card>
           </div>
         </Motion>
       </div>
 
       <div class="stats-wrapper">
-        <q-card flat class="stats-card">
-          <div class="stats-grid">
-            <div class="total-report">
-              <div class="stats-title">Statistik Real Time</div>
+        <Motion
+          :initial="{ opacity: 0, y: 25 }"
+          :animate="{ opacity: 1, y: 0 }"
+          :transition="{ duration: 0.6, delay: 0.25, ease: 'easeOut' }"
+        >
+          <q-card flat class="stats-card">
+            <div class="stats-grid">
+              <div class="total-report">
+                <div class="stats-title">Statistik Real Time</div>
+                <div class="stats-number">90</div>
+                <div class="stats-label">Laporan Masuk</div>
+              </div>
 
-              <div class="stats-number">90</div>
+              <div class="status-box success">
+                <q-icon name="check_circle" size="32px" />
+                <div>
+                  <div class="status-number">30</div>
+                  <div>Laporan telah ditindaklanjuti</div>
+                </div>
+              </div>
 
-              <div class="stats-label">Laporan Masuk</div>
-            </div>
+              <div class="status-box warning">
+                <q-icon name="warning" size="32px" />
+                <div>
+                  <div class="status-number">30</div>
+                  <div>Laporan perlu perhatian</div>
+                </div>
+              </div>
 
-            <div class="status-box success">
-              <q-icon name="check_circle" size="32px" />
-              <div>
-                <div class="status-number">30</div>
-                <div>Laporan telah ditindaklanjuti</div>
+              <div class="status-box danger">
+                <q-icon name="report_problem" size="32px" />
+                <div>
+                  <div class="status-number">30</div>
+                  <div>Laporan perlu penanganan</div>
+                </div>
               </div>
             </div>
-
-            <div class="status-box warning">
-              <q-icon name="warning" size="32px" />
-              <div>
-                <div class="status-number">30</div>
-                <div>Laporan perlu perhatian</div>
-              </div>
-            </div>
-
-            <div class="status-box danger">
-              <q-icon name="report_problem" size="32px" />
-              <div>
-                <div class="status-number">30</div>
-                <div>Laporan perlu penanganan</div>
-              </div>
-            </div>
-          </div>
-        </q-card>
+          </q-card>
+        </Motion>
       </div>
     </section>
 
     <!-- Section: map -->
     <section class="q-mt-xl shadow-2 map-section">
-      <div class="row items-stretch">
-        <div class="col-12 col-md-4 q-pa-sm left-panel">
-          <div class="text-subtitle2 text-grey-8">Peta Kondisi Wisata</div>
+      <Motion
+        :initial="{ opacity: 0, y: 20 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.6, ease: 'easeOut' }"
+      >
+        <div class="row items-stretch">
+          <div class="col-12 col-md-4 q-pa-sm left-panel">
+            <div class="text-subtitle2 text-grey-8">Peta Kondisi Wisata</div>
 
-          <div class="text-h4 text-weight-bold q-mt-sm kondisi-title">
-            Pantau Kondisi
-            <br />
-            Destinasi Secara
-            <br />
-            <span class="text-primary"> Real-Time </span>
-          </div>
-
-          <div class="text-body2 q-mt-md">
-            Peta ini menampilkan kondisi terkini destinasi wisata berdasarkan laporan masyarakat dan
-            wisatawan secara real-time.
-          </div>
-
-          <q-btn
-            class="q-mt-sm"
-            color="primary"
-            no-caps
-            rounded
-            label="Lihat Peta Selengkapnya"
-            icon-right="arrow_forward"
-            @click="mapDialogOpen = true"
-          />
-
-          <div class="row q-col-gutter-sm q-mt-md q-pa-sm legend-wrapper">
-            <div class="col-auto">
-              <div class="legend-item">
-                <span class="dot green"></span>
-                Aman
-              </div>
+            <div class="text-h4 text-weight-bold q-mt-sm kondisi-title">
+              Pantau Kondisi
+              <br />
+              Destinasi Secara
+              <br />
+              <span class="text-primary"> Real-Time </span>
             </div>
 
-            <div class="col-auto">
-              <div class="legend-item">
-                <span class="dot orange"></span>
-                Perlu Perhatian
-              </div>
+            <div class="text-body2 q-mt-md">
+              Peta ini menampilkan kondisi terkini destinasi wisata berdasarkan laporan masyarakat
+              dan wisatawan secara real-time.
             </div>
 
-            <div class="col-auto">
-              <div class="legend-item">
-                <span class="dot red"></span>
-                Perlu Penanganan
-              </div>
-            </div>
-          </div>
-        </div>
+            <q-btn
+              class="q-mt-sm"
+              color="primary"
+              no-caps
+              rounded
+              label="Lihat Peta Selengkapnya"
+              icon-right="arrow_forward"
+              to="/peta"
+            />
 
-        <div class="col-12 col-md-8">
-          <div class="map-wrapper">
-            <div ref="mapContainer" class="map"></div>
-            <q-card class="destination-card">
-              <q-img src="https://picsum.photos/400/200" height="100px" />
-
-              <q-card-section>
-                <div class="text-subtitle1 text-weight-bold">Pantai Batu Hoda</div>
-                <div class="text-caption text-orange">● Perlu Perhatian</div>
-                <div class="text-caption text-grey">3 laporan terbaru</div>
-                <div class="row q-col-gutter-sm q-mt-sm">
-                  <div class="col">
-                    <q-img src="https://picsum.photos/100/100" ratio="1" height="80px" />
-                  </div>
-                  <div class="col">
-                    <q-img src="https://picsum.photos/101/100" ratio="1" height="80px" />
-                  </div>
+            <div class="row q-col-gutter-sm q-mt-md q-pa-sm legend-wrapper">
+              <div class="col-auto">
+                <div class="legend-item">
+                  <span class="dot green"></span>
+                  Aman
                 </div>
+              </div>
 
-                <q-btn
-                  class="full-width q-mt-sm"
-                  outline
-                  rounded
-                  color="primary"
-                  label="Lihat Detail"
-                  @click="mapDialogOpen = true"
-                />
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-      </div>
-    </section>
+              <div class="col-auto">
+                <div class="legend-item">
+                  <span class="dot orange"></span>
+                  Perlu Perhatian
+                </div>
+              </div>
 
-    <!-- Section: cara kerja sistem -->
-    <section class="q-px-xl q-py-lg section-cara-kerja">
-      <q-card flat bordered class="q-pa-lg" style="border-radius: 24px">
-        <div class="text-h6 text-weight-bold q-mb-lg">Cara Kerja Sistem</div>
-        <div class="row justify-between items-start">
-          <div class="col text-center">
-            <q-badge rounded color="primary" label="1" class="q-mb-sm" />
-            <q-avatar size="90px" color="blue-1" text-color="blue-8" icon="photo_camera" />
-            <div class="text-subtitle1 text-weight-bold q-mt-md">Ambil & Unggah Foto</div>
-            <div class="text-caption q-mt-sm">
-              Ambil foto kondisi sampah di tempat wisata yang ingin dilaporkan.
+              <div class="col-auto">
+                <div class="legend-item">
+                  <span class="dot red"></span>
+                  Perlu Penanganan
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="col-auto self-center">
-            <q-icon name="more_horiz" size="40px" color="grey-5" />
-          </div>
+          <div class="col-12 col-md-8">
+            <div class="map-wrapper">
+              <div ref="mapContainer" class="map"></div>
+              <q-card class="destination-card">
+                <q-card-section>
+                  <div class="text-subtitle1 text-weight-bold">Pantai Batu Hoda</div>
+                  <div class="text-caption text-orange">● Perlu Perhatian</div>
+                  <div class="text-caption text-grey">3 laporan terbaru</div>
 
-          <div class="col text-center">
-            <q-badge rounded color="primary" label="2" class="q-mb-sm" />
-            <q-avatar size="90px" color="green-1" text-color="green-8" icon="memory" />
-            <div class="text-subtitle1 text-weight-bold q-mt-md">AI Analisis Kondisi</div>
-            <div class="text-caption q-mt-sm">
-              AI menganalisis foto untuk menentukan tingkat keparahan sampah.
-            </div>
-          </div>
-          <div class="col-auto self-center">
-            <q-icon name="more_horiz" size="40px" color="grey-5" />
-          </div>
-
-          <div class="col text-center">
-            <q-badge rounded color="primary" label="3" class="q-mb-sm" />
-
-            <q-avatar size="90px" color="orange-1" text-color="orange-8" icon="place" />
-
-            <div class="text-subtitle1 text-weight-bold q-mt-md">Lokasi Otomatis</div>
-
-            <div class="text-caption q-mt-sm">
-              GPS mendeteksi lokasi secara otomatis saat laporan dibuat.
-            </div>
-          </div>
-
-          <div class="col-auto self-center">
-            <q-icon name="more_horiz" size="40px" color="grey-5" />
-          </div>
-
-          <div class="col text-center">
-            <q-badge rounded color="primary" label="4" class="q-mb-sm" />
-
-            <q-avatar size="90px" color="purple-1" text-color="purple-8" icon="account_balance" />
-
-            <div class="text-subtitle1 text-weight-bold q-mt-md">Diteruskan ke Pengelola</div>
-
-            <div class="text-caption q-mt-sm">
-              Laporan dikirim ke pengelola untuk segera ditindaklanjuti.
-            </div>
-          </div>
-        </div>
-      </q-card>
-    </section>
-
-    <!-- Section: Laporan Terbaru & Tips -->
-    <section class="q-px-xl q-py-lg section-laporan">
-      <div class="row q-col-gutter-xl">
-        <div class="col-12 col-md-7">
-          <div class="row items-center justify-between q-mb-md">
-            <div class="text-h6 text-weight-bold">Laporan Terbaru</div>
-            <q-btn flat no-caps color="primary" label="Lihat Semua" icon-right="chevron_right" />
-          </div>
-
-          <div class="report-scroll-wrapper">
-            <div class="report-cards-row">
-              <q-card
-                v-for="(report, i) in laporanTerbaru"
-                :key="i"
-                flat
-                bordered
-                class="report-card"
-              >
-                <q-img :src="report.img" height="120px" />
-                <q-card-section class="q-pt-sm q-pb-md">
-                  <div class="text-subtitle2 text-weight-bold ellipsis">{{ report.lokasi }}</div>
-                  <div class="text-caption text-grey-7 q-mt-xs">{{ report.kategori }}</div>
-                  <div class="text-caption text-grey-5 q-mt-xs">
-                    <q-icon name="schedule" size="12px" /> {{ report.waktu }}
-                  </div>
+                  <q-btn
+                    class="full-width q-mt-sm"
+                    outline
+                    rounded
+                    color="primary"
+                    label="Lihat Detail"
+                    to="/destinasi-detail"
+                  />
                 </q-card-section>
               </q-card>
             </div>
           </div>
         </div>
+      </Motion>
+    </section>
 
+    <!-- Section: cara kerja sistem -->
+    <section class="q-px-xl q-py-lg section-cara-kerja">
+      <Motion
+        :initial="{ opacity: 0, y: 20 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.6, ease: 'easeOut' }"
+      >
+        <q-card flat bordered class="q-pa-lg" style="border-radius: 24px">
+          <div class="text-h6 text-weight-bold q-mb-lg">Cara Kerja Sistem</div>
+          <div class="row justify-between items-start">
+            <template v-for="(step, idx) in caraKerjaSteps" :key="step.number">
+              <div class="col text-center">
+                <q-badge rounded color="primary" :label="step.number" class="q-mb-sm" />
+                <q-avatar
+                  size="90px"
+                  :color="step.bgColor"
+                  :text-color="step.textColor"
+                  :icon="step.icon"
+                />
+                <div class="text-subtitle1 text-weight-bold q-mt-md">{{ step.title }}</div>
+                <div class="text-caption q-mt-sm">
+                  {{ step.desc }}
+                </div>
+              </div>
 
-        <div class="col-12 col-md-5">
-          <div class="text-h6 text-weight-bold q-mb-md">Tips Melaporkan</div>
-          <div class="tips-list">
-            <div v-for="(tip, i) in tipsMelaporkan" :key="i" class="tip-item">
-              <q-avatar :color="tip.color" text-color="white" size="36px" :icon="tip.icon" />
-              <div class="tip-text">{{ tip.text }}</div>
+              <div
+                v-if="idx < caraKerjaSteps.length - 1"
+                :key="'arrow-' + idx"
+                class="col-auto self-center"
+              >
+                <q-icon name="more_horiz" size="40px" color="grey-5" />
+              </div>
+            </template>
+          </div>
+        </q-card>
+      </Motion>
+    </section>
+
+    <!-- Section: Laporan Terbaru & Tips -->
+    <section class="q-px-xl q-py-lg section-laporan">
+      <Motion
+        :initial="{ opacity: 0, y: 20 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.6, ease: 'easeOut' }"
+      >
+        <div class="row q-col-gutter-xl">
+          <div class="col-12 col-md-7">
+            <div class="row items-center justify-between q-mb-md">
+              <div class="text-h6 text-weight-bold">Laporan Terbaru</div>
+              <q-btn
+                flat
+                no-caps
+                color="primary"
+                label="Lihat Semua"
+                icon-right="chevron_right"
+                to="/peta"
+              />
+            </div>
+
+            <div class="report-scroll-wrapper">
+              <div class="report-cards-row">
+                <q-card
+                  v-for="(report, i) in laporanTerbaru"
+                  :key="i"
+                  flat
+                  bordered
+                  class="report-card"
+                >
+                  <q-img :src="report.img" height="120px" />
+                  <q-card-section class="q-pt-sm q-pb-md">
+                    <div class="text-subtitle2 text-weight-bold ellipsis">{{ report.lokasi }}</div>
+                    <div class="text-caption text-grey-7 q-mt-xs">{{ report.kategori }}</div>
+                    <div class="text-caption text-grey-5 q-mt-xs">
+                      <q-icon name="schedule" size="12px" /> {{ report.waktu }}
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-5">
+            <div class="text-h6 text-weight-bold q-mb-md">Tips Melaporkan</div>
+            <div class="tips-list">
+              <div v-for="(tip, i) in tipsMelaporkan" :key="i" class="tip-item">
+                <q-avatar :color="tip.color" text-color="white" size="36px" :icon="tip.icon" />
+                <div class="tip-text">{{ tip.text }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Motion>
     </section>
 
     <!-- Section: CTA Banner -->
-    <section class="cta-section q-mx-xl q-mb-xl">
-      <div class="cta-inner">
-        <div class="cta-text">
-          <div class="text-h4 text-weight-bold cta-title">
-            Bersama Kita Bisa Menjaga
-            <br />
-            Keindahan Danau Toba
+    <section class="cta-section q-mb-xl">
+      <Motion
+        :initial="{ opacity: 0, y: 20 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :transition="{ duration: 0.6, ease: 'easeOut' }"
+      >
+        <div class="cta-inner">
+          <div class="cta-text">
+            <div class="text-h4 text-weight-bold cta-title">
+              Bersama Kita Bisa Menjaga
+              <br />
+              Keindahan Danau Toba
+            </div>
+            <div class="text-body2 cta-subtitle q-mt-sm">
+              Setiap laporan dari Anda sangat berarti untuk masa depan Danau Toba yang lebih baik.
+            </div>
           </div>
-          <div class="text-body2 cta-subtitle q-mt-sm">
-            Setiap laporan dari Anda sangat berarti untuk masa depan Danau Toba yang lebih baik.
+          <div class="cta-action">
+            <q-btn
+              color="white"
+              text-color="primary"
+              icon="photo_camera"
+              label="Laporkan Kondisi"
+              no-caps
+              unelevated
+              style="border-radius: 14px; font-weight: 700"
+              to="/laporkan"
+            />
+          </div>
+          <div class="cta-illustration">
+            <q-img src="../../assets/Logo.png" width="160px" fit="contain" />
           </div>
         </div>
-        <div class="cta-action">
-          <q-btn
-            color="white"
-            text-color="primary"
-            icon="photo_camera"
-            label="Laporkan Kondisi"
-            no-caps
-            unelevated
-            style="border-radius: 14px; font-weight: 700"
-          />
-        </div>
-        <div class="cta-illustration">
-          <q-img src="../assets/Logo.png" width="160px" fit="contain" />
-        </div>
-      </div>
+      </Motion>
     </section>
 
     <!-- Footer -->
@@ -335,14 +334,51 @@
 </template>
 
 <script setup>
-import FooterComponent from '../components/FooterComponent.vue'
-import MapDialogModal from '../components/MapDialogModal.vue'
-import { Motion } from 'motion-v'
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { Motion } from 'motion-v'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import FooterComponent from '../../components/FooterComponent.vue'
+import MapDialogModal from '../../components/MapDialogModal.vue'
 
 const mapDialogOpen = ref(false)
+const mapContainer = ref(null)
+const map = ref(null)
+
+const caraKerjaSteps = [
+  {
+    number: '1',
+    bgColor: 'blue-1',
+    textColor: 'blue-8',
+    icon: 'photo_camera',
+    title: 'Ambil & Unggah Foto',
+    desc: 'Ambil foto kondisi sampah di tempat wisata yang ingin dilaporkan.',
+  },
+  {
+    number: '2',
+    bgColor: 'green-1',
+    textColor: 'green-8',
+    icon: 'memory',
+    title: 'AI Analisis Kondisi',
+    desc: 'AI menganalisis foto untuk menentukan tingkat keparahan sampah.',
+  },
+  {
+    number: '3',
+    bgColor: 'orange-1',
+    textColor: 'orange-8',
+    icon: 'place',
+    title: 'Lokasi Otomatis',
+    desc: 'GPS mendeteksi lokasi secara otomatis saat laporan dibuat.',
+  },
+  {
+    number: '4',
+    bgColor: 'purple-1',
+    textColor: 'purple-8',
+    icon: 'account_balance',
+    title: 'Diteruskan ke Pengelola',
+    desc: 'Laporan dikirim ke pengelola untuk segera ditindaklanjuti.',
+  },
+]
 
 const laporanTerbaru = [
   {
@@ -378,12 +414,30 @@ const tipsMelaporkan = [
   { icon: 'verified_user', color: 'teal-7', text: 'Laporkan dengan jujur.' },
 ]
 
-const mapContainer = ref(null)
-const map = ref(null)
+const lakePolygonCoordinates = [
+  [2.85, 98.65],
+  [2.92, 98.85],
+  [2.75, 99.05],
+  [2.45, 99.0],
+  [2.35, 98.9],
+  [2.45, 98.65],
+  [2.7, 98.58],
+]
 
-onMounted(async () => {
-  await nextTick()
+const destinationMarkers = [
+  { name: 'Pantai Batu Hoda', coords: [2.6847, 98.8722] },
+  { name: 'Pantai Simanindo', coords: [2.7481, 98.7456] },
+  { name: 'Pelabuhan Tomok', coords: [2.6653, 98.8541] },
+  { name: 'Bukit Holbung', coords: [2.5531, 98.7123] },
+  { name: 'Menara Pandang Tele', coords: [2.5489, 98.6312] },
+  { name: 'Desa Wisata Tomok', coords: [2.658, 98.8612] },
+]
 
+function resizeMap() {
+  map.value?.invalidateSize()
+}
+
+function initMap() {
   if (!mapContainer.value) return
 
   map.value = L.map(mapContainer.value, {
@@ -396,20 +450,36 @@ onMounted(async () => {
     maxZoom: 19,
   }).addTo(map.value)
 
+  L.polygon(lakePolygonCoordinates, {
+    color: '#e53935',
+    weight: 2,
+    fillColor: '#93c5fd',
+    fillOpacity: 0.35,
+  }).addTo(map.value)
+
+  destinationMarkers.forEach((d) => {
+    const marker = L.marker(d.coords).addTo(map.value)
+    marker.bindTooltip(d.name, {
+      permanent: true,
+      direction: 'top',
+      className: 'map-tooltip-badge',
+    })
+  })
+
   setTimeout(() => {
-    map.value.invalidateSize()
+    map.value?.invalidateSize()
   }, 200)
 
   window.addEventListener('resize', resizeMap)
-})
-
-function resizeMap() {
-  map.value?.invalidateSize()
 }
+
+onMounted(async () => {
+  await nextTick()
+  initMap()
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeMap)
-
   if (map.value) {
     map.value.remove()
     map.value = null
@@ -453,6 +523,17 @@ onBeforeUnmount(() => {
   z-index: 1;
 }
 
+:deep(.map-tooltip-badge) {
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .destination-card {
   pointer-events: auto;
   position: absolute;
@@ -493,7 +574,7 @@ onBeforeUnmount(() => {
 .hero-section {
   position: relative;
   min-height: 560px;
-  background-image: url('../assets/landing_page.png');
+  background-image: url('../../assets/landing_page.png');
   background-size: cover;
   background-position: center;
   padding: 25px 80px 105px;
@@ -745,7 +826,6 @@ onBeforeUnmount(() => {
     font-size: 52px;
   }
 
-  /* stats card: 2 columns (total-report spans both) → 2 rows of status → ~270px */
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -775,10 +855,6 @@ onBeforeUnmount(() => {
   .cta-section {
     margin: 0 20px 32px;
   }
-
-  .site-footer {
-    padding: 48px 40px 24px;
-  }
 }
 
 @media (max-width: 1024px) {
@@ -794,21 +870,12 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 900px) {
-  .footer-inner {
-    grid-template-columns: 1fr 1fr;
-    gap: 28px;
-  }
-
   .cta-inner {
     padding: 36px 32px;
   }
 
   .cta-illustration {
     display: none;
-  }
-
-  .site-footer {
-    padding: 36px 24px 20px;
   }
 
   .section-cara-kerja .row > .col {
@@ -942,7 +1009,6 @@ onBeforeUnmount(() => {
   }
 }
 
-
 @media (max-width: 480px) {
   .hero-section {
     padding: 20px 16px 560px;
@@ -989,15 +1055,6 @@ onBeforeUnmount(() => {
 
   .map-wrapper {
     height: 240px;
-  }
-
-  .footer-inner {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .site-footer {
-    padding: 28px 16px 16px;
   }
 
   .cta-inner {

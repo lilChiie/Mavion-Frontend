@@ -2,9 +2,16 @@
   <q-layout view="lHh lpr lFf">
     <q-header elevated class="text-primary bg-white q-pa-sm q-px-xl navbar" :style="navbarStyle">
       <q-toolbar>
-        <q-img :src="logo" width="120px" fit="contain" />
+        <q-img
+          :src="logo"
+          width="120px"
+          fit="contain"
+          class="cursor-pointer"
+          @click="$router.push('/')"
+        />
         <q-space />
         <div class="navbar-menu q-mx-lg">
+          <q-btn flat no-caps label="Beranda" class="menu-btn" to="/" />
           <q-btn flat no-caps label="Laporkan Kondisi" class="menu-btn" to="/laporkan" />
           <q-btn flat no-caps label="Peta Wisata" class="menu-btn" to="/peta" />
           <q-btn flat no-caps label="Tentang Sistem" class="menu-btn" to="/tentang" />
@@ -28,19 +35,19 @@
     </q-page-container>
   </q-layout>
 </template>
+
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import logo from '../assets/Logo_1.png'
 
 const scrollY = ref(0)
 
-const handleScroll = () => {
+function handleScroll() {
   scrollY.value = window.scrollY
 }
 
 const navbarStyle = computed(() => {
   const maxScroll = 200
-
   const progress = Math.min(scrollY.value / maxScroll, 1)
 
   return {
@@ -50,9 +57,7 @@ const navbarStyle = computed(() => {
 })
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll, {
-    passive: true,
-  })
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onUnmounted(() => {
@@ -65,12 +70,6 @@ onUnmounted(() => {
   transition:
     opacity 0.15s linear,
     transform 0.15s linear;
-
   will-change: opacity, transform;
-}
-
-.navbar-hidden {
-  transform: translateY(-120%);
-  opacity: 0;
 }
 </style>

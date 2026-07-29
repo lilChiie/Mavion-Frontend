@@ -169,8 +169,8 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { Motion } from 'motion-v'
-import loginBg from '../assets/login_bg.png'
-import logo from '../assets/Logo.png'
+import loginBg from '../../assets/login_bg.png'
+import logo from '../../assets/Logo.png'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -184,12 +184,12 @@ const form = reactive({
   rememberMe: false,
 })
 
-const isValidEmail = (email) => {
+function isValidEmail(email) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email)
 }
 
-const handleLogin = () => {
+function handleLogin() {
   loading.value = true
 
   setTimeout(() => {
@@ -199,12 +199,12 @@ const handleLogin = () => {
       $q.notify({
         type: 'positive',
         message: 'Login Berhasil!',
-        caption: 'Selamat datang kembali di portal Mavion.',
+        caption: 'Selamat datang di Panel Admin Mahorbasa Vision.',
         position: 'top',
         timeout: 2000,
         actions: [{ icon: 'close', color: 'white' }],
       })
-      router.push('/')
+      router.push('/admin/dashboard')
     } else {
       $q.notify({
         type: 'negative',
@@ -217,7 +217,6 @@ const handleLogin = () => {
     }
   }, 1500)
 }
-
 </script>
 
 <style scoped>
@@ -274,30 +273,14 @@ const handleLogin = () => {
   width: 100%;
 }
 
-/* Custom inputs styling */
 .custom-input :deep(.q-field__control) {
   border-radius: 12px !important;
   transition: border-color 0.25s ease;
 }
 
-.custom-input :deep(.q-field__control:before) {
-  border-radius: 12px !important;
-}
-
+.custom-input :deep(.q-field__control:before),
 .custom-input :deep(.q-field__control:after) {
   border-radius: 12px !important;
-}
-
-.forgot-link {
-  color: #197f70;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-.forgot-link:hover {
-  color: #0d4038;
-  text-decoration: underline;
 }
 
 .login-btn {
