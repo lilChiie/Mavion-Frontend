@@ -120,11 +120,24 @@
 
             <div class="form-section">
               <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-xs">
-                2. Catatan Tambahan (Opsional)
+                2. Pilih Lokasi & Catatan
               </div>
               <div class="text-caption text-grey-6 q-mb-sm">
-                Tambahkan keterangan lokasi atau catatan singkat jika diperlukan.
+                Pilih lokasi wisata dan tambahkan catatan singkat jika diperlukan.
               </div>
+
+              <q-select
+                v-model="selectedSpot"
+                :options="spots"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                label="Pilih Destinasi Wisata"
+                outlined
+                dense
+                class="bg-white q-mb-md"
+              />
 
               <q-input
                 v-model="catatan"
@@ -166,8 +179,9 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Motion } from 'motion-v'
+import axios from 'axios'
 import FooterComponent from '../../components/FooterComponent.vue'
 import ReportSuccessModal from '../../components/ReportSuccessModal.vue'
 
@@ -176,10 +190,24 @@ const canvasRef = ref(null)
 const isCameraActive = ref(false)
 const capturedImage = ref(null)
 const catatan = ref('')
+const selectedSpot = ref(null)
+const spots = ref([])
 const submitting = ref(false)
 const successModal = ref(false)
 
 let mediaStream = null
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/spots/')
+    spots.value = res.data
+    if(spots.value.length > 0) {
+      selectedSpot.value = spots.value[0].id
+    }
+  } catch (error) {
+    console.error('Failed to fetch spots', error)
+  }
+})
 
 async function startCamera() {
   try {
@@ -225,12 +253,49 @@ function stopCamera() {
   isCameraActive.value = false
 }
 
-function submitReport() {
+// Helper to convert base64 to Blob
+function dataURLtoBlob(dataurl) {
+  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], {type:mime});
+}
+
+async function submitReport() {
+  if (!capturedImage.value || !selectedSpot.value) {
+    alert("Harap ambil foto dan pilih lokasi terlebih dahulu!")
+    return
+  }
+  
   submitting.value = true
-  setTimeout(() => {
+  
+  try {
+    const blob = dataURLtoBlob(capturedImage.value)
+    const formData = new FormData()
+    formData.append('photo', blob, 'report.jpg')
+    formData.append('spot_id', selectedSpot.value)
+    
+    // Using mock coordinates for Danau Toba area since we can't easily access GPS here
+    formData.append('latitude', '2.5855')
+    formData.append('longitude', '98.7904')
+    // Option: append catatan if backend supports it
+    // formData.append('notes', catatan.value)
+    
+    await axios.post('http://127.0.0.1:5000/api/reports/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
     submitting.value = false
     successModal.value = true
-  }, 1000)
+  } catch(error) {
+    console.error(error)
+    submitting.value = false
+    alert("Gagal mengirim laporan: " + (error.response?.data?.message || error.message))
+  }
 }
 
 onUnmounted(() => {

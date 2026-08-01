@@ -169,6 +169,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { Motion } from 'motion-v'
+import axios from 'axios'
 import loginBg from '../../assets/login_bg.png'
 import logo from '../../assets/Logo.png'
 
@@ -189,33 +190,43 @@ function isValidEmail(email) {
   return re.test(email)
 }
 
-function handleLogin() {
+async function handleLogin() {
   loading.value = true
 
-  setTimeout(() => {
+  try {
+    const response = await axios.post('http://127.0.0.1:5000/api/auth/login', {
+      email: form.email,
+      password: form.password
+    })
+    
+    // Save token
+    localStorage.setItem('admin_token', response.data.access_token)
+    
     loading.value = false
-
-    if (form.email === 'admin@mavion.id' && form.password === 'password123') {
-      $q.notify({
-        type: 'positive',
-        message: 'Login Berhasil!',
-        caption: 'Selamat datang di Panel Admin Mahorbasa Vision.',
-        position: 'top',
-        timeout: 2000,
-        actions: [{ icon: 'close', color: 'white' }],
-      })
-      router.push('/admin/dashboard')
-    } else {
-      $q.notify({
-        type: 'negative',
-        message: 'Login Gagal!',
-        caption: 'Email atau kata sandi salah. Silakan coba lagi.',
-        position: 'top',
-        timeout: 3000,
-        actions: [{ icon: 'close', color: 'white' }],
-      })
-    }
-  }, 1500)
+    
+    $q.notify({
+      type: 'positive',
+      message: 'Login Berhasil!',
+      caption: 'Selamat datang di Panel Admin Mahorbasa Vision.',
+      position: 'top',
+      timeout: 2000,
+      actions: [{ icon: 'close', color: 'white' }],
+    })
+    router.push('/admin/dashboard')
+    
+  } catch (error) {
+    loading.value = false
+    console.error(error)
+    
+    $q.notify({
+      type: 'negative',
+      message: 'Login Gagal!',
+      caption: error.response?.data?.message || 'Email atau kata sandi salah. Silakan coba lagi.',
+      position: 'top',
+      timeout: 3000,
+      actions: [{ icon: 'close', color: 'white' }],
+    })
+  }
 }
 </script>
 

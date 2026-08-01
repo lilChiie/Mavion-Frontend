@@ -20,7 +20,7 @@
         >
           <div class="q-mx-md">
             <div class="text-subtitle2 text-weight-bold">Laporan Masuk</div>
-            <div class="text-h4 text-weight-bolder" style="line-height: 1">80</div>
+            <div class="text-h4 text-weight-bolder" style="line-height: 1">{{ totalReports }}</div>
           </div>
           <q-avatar size="40px" color="teal-8" text-color="white" icon="insights" />
         </q-card>
@@ -153,7 +153,7 @@
               </div>
 
               <div class="column gap-xs">
-                <div
+                  <div
                   v-for="(report, idx) in recentReports.slice(0, 4)"
                   :key="idx"
                   class="ref-report-item row items-center justify-between q-pa-xs rounded-borders"
@@ -173,17 +173,17 @@
                           class="bg-red-1 text-red-9 text-weight-bold"
                           style="font-size: 9px; padding: 1px 4px"
                         >
-                          Baru {{ report.time }}
+                          Skor AI: {{ report.ai_score }}
                         </q-badge>
                       </div>
                       <div
                         class="text-subtitle2 text-weight-bold text-grey-9"
                         style="line-height: 1.2"
                       >
-                        {{ report.location }}
+                        {{ report.spot_name }}
                       </div>
                       <div class="text-caption text-grey-6" style="font-size: 11px">
-                        {{ report.subtext }}
+                        {{ new Date(report.created_at).toLocaleString() }}
                       </div>
                     </div>
                   </div>
@@ -191,7 +191,6 @@
                   <div class="row items-center gap-xs q-pr-xs q-gutter-x-xs">
                     <span class="ref-status-dot" :class="report.dotClass"></span>
                     <span
-                      v-if="report.statusText"
                       class="text-caption text-weight-bold text-grey-8 gt-xs"
                       style="font-size: 11px"
                     >
@@ -212,45 +211,14 @@
 import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { Motion } from 'motion-v'
 import VueApexCharts from 'vue3-apexcharts'
+import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const trendFilter = ref('harian')
-
-const recentReports = ref([
-  {
-    location: 'Area Dermaga',
-    subtext: 'Danau Toba, Ajibata',
-    time: '12.00',
-    img: 'https://picsum.photos/seed/toba1/200/150',
-    dotClass: 'bg-red-6',
-    statusText: 'Perlu Penanganan',
-  },
-  {
-    location: 'Pantai Batu Hoda',
-    subtext: 'Samosir • 35 menit lalu',
-    time: '12.00',
-    img: 'https://picsum.photos/seed/toba2/200/150',
-    dotClass: 'bg-orange-6',
-    statusText: 'Perlu Perhatian',
-  },
-  {
-    location: 'Pelabuhan Ajibata',
-    subtext: 'Danau Toba, Ajibata',
-    time: '12.00',
-    img: 'https://picsum.photos/seed/toba3/200/150',
-    dotClass: 'bg-green-6',
-    statusText: 'Selesai',
-  },
-  {
-    location: 'Bukit Holbung',
-    subtext: 'Samosir • 3 jam lalu',
-    time: '12.00',
-    img: 'https://picsum.photos/seed/toba4/200/150',
-    dotClass: 'bg-green-6',
-    statusText: 'Selesai',
-  },
-])
+const totalReports = ref(0)
+const recentReports = ref([])
+const mapDestinations = ref([])
 
 const rawDataSets = {
   harian: {
@@ -363,34 +331,25 @@ function initAdminMap() {
     maxZoom: 19,
   }).addTo(adminMap.value)
 
-  const destinationsList = [
-    {
-      name: 'Pantai Batu Hoda',
-      coords: [2.6847, 98.8722],
-      status: 'Perlu Perhatian',
-      color: 'orange',
-    },
-    { name: 'Pantai Simanindo', coords: [2.7481, 98.7456], status: 'Aman', color: 'green' },
-    {
-      name: 'Pelabuhan Tomok',
-      coords: [2.6653, 98.8541],
-      status: 'Perlu Penanganan',
-      color: 'red',
-    },
-    { name: 'Bukit Holbung', coords: [2.5531, 98.7123], status: 'Aman', color: 'green' },
-    {
-      name: 'Menara Pandang Tele',
-      coords: [2.5489, 98.6312],
-      status: 'Perlu Penanganan',
-      color: 'red',
-    },
-  ]
+  const destinationsList = mapDestinations.value
 
   destinationsList.forEach((d) => {
-    const marker = L.marker(d.coords).addTo(adminMap.value)
+    const marker = L.marker([d.latitude, d.longitude]).addTo(adminMap.value)
+    
+    // AI Score mapping to colors
+    let color = 'green'
+    let status = 'Aman'
+    if (d.ai_score > 0.7) {
+      color = 'red'
+      status = 'Kritis'
+    } else if (d.ai_score > 0.4) {
+      color = 'orange'
+      status = 'Perlu Perhatian'
+    }
+    
     const badgeClass =
-      d.color === 'red' ? 'badge-red' : d.color === 'orange' ? 'badge-orange' : 'badge-green'
-    marker.bindTooltip(`<div class="${badgeClass}">${d.status}</div>`, {
+      color === 'red' ? 'badge-red' : color === 'orange' ? 'badge-orange' : 'badge-green'
+    marker.bindTooltip(`<div class="${badgeClass}">${status} - ${d.spot_name}</div>`, {
       permanent: true,
       direction: 'right',
       className: 'ref-map-badge-tooltip',
@@ -402,7 +361,31 @@ function initAdminMap() {
   }, 200)
 }
 
+const fetchDashboardData = async () => {
+  const token = localStorage.getItem('admin_token')
+  const config = { headers: { Authorization: `Bearer ${token}` } }
+  try {
+    const statsRes = await axios.get('http://127.0.0.1:5000/api/dashboard/stats', config)
+    totalReports.value = statsRes.data.total_reports
+    
+    const priorityRes = await axios.get('http://127.0.0.1:5000/api/dashboard/priority', config)
+    recentReports.value = priorityRes.data.map(r => ({
+      ...r,
+      img: 'https://picsum.photos/seed/' + r.report_id + '/200/150', // Mock image, normally from backend
+      dotClass: r.ai_score > 0.7 ? 'bg-red-6' : 'bg-orange-6',
+      statusText: r.ai_score > 0.7 ? 'Kritis' : 'Perlu Perhatian'
+    }))
+    
+    const mapRes = await axios.get('http://127.0.0.1:5000/api/dashboard/map', config)
+    mapDestinations.value = mapRes.data
+    
+  } catch(e) {
+    console.error("Gagal memuat dashboard", e)
+  }
+}
+
 onMounted(async () => {
+  await fetchDashboardData()
   await nextTick()
   initAdminMap()
 })
