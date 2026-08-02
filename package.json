@@ -18,6 +18,8 @@
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "apexcharts": "^6.5.0",
     "axios": "^1.19.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "leaflet": "^1.9.4",
     "motion": "^12.41.0",
     "motion-v": "^2.3.0",

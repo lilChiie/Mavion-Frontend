@@ -28,7 +28,8 @@
               <q-chip
                 dense
                 unremovable
-                class="status-chip bg-orange-1 text-orange-9 text-weight-bold q-px-sm"
+                class="status-chip text-weight-bold q-px-sm"
+                :class="destStatusColor"
               >
                 ● {{ destStatus }}
               </q-chip>
@@ -47,44 +48,29 @@
               label="Laporkan Kondisi"
               class="btn-report text-weight-bold q-px-lg q-py-sm"
               no-caps
-              to="/laporkan"
+              :to="{ path: '/laporkan', query: { spot_id: spotId } }"
             />
           </div>
         </Motion>
 
         <div class="col-12 col-md-7 hero-right relative-position column justify-end">
-          <div class="carousel-overlay full-width row items-center justify-end q-pa-md gap-sm">
-            <q-btn
-              round
-              dense
-              flat
-              icon="chevron_left"
-              color="white"
-              class="carousel-nav-btn bg-black-30"
-            />
-
-            <div class="row no-wrap gap-sm overflow-hidden q-gutter-x-sm">
-              <q-img
-                v-for="(img, i) in galleryImages"
-                :key="i"
-                :src="img"
-                width="120px"
-                height="80px"
-                fit="cover"
-                class="gallery-thumb cursor-pointer"
-                :class="{ active: i === activeImageIndex }"
-                @click="activeImageIndex = i"
-              />
+          <div v-if="galleryList.length > 0" class="carousel-overlay full-width row items-center justify-end q-pa-md gap-sm">
+            <div class="marquee-container overflow-hidden full-width">
+              <div class="marquee-track">
+                <div class="marquee-content" v-for="n in 12" :key="n">
+                  <q-img
+                    v-for="item in galleryList"
+                    :key="item.id"
+                    :src="item.src"
+                    width="120px"
+                    height="80px"
+                    fit="cover"
+                    class="gallery-thumb"
+                    loading="eager"
+                  />
+                </div>
+              </div>
             </div>
-
-            <q-btn
-              round
-              dense
-              flat
-              icon="chevron_right"
-              color="white"
-              class="carousel-nav-btn bg-black-30"
-            />
           </div>
         </div>
       </div>
@@ -106,7 +92,7 @@
                   <q-circular-progress
                     show-value
                     font-size="18px"
-                    :value="82"
+                    :value="avgIndeksKebersihan"
                     size="110px"
                     :thickness="0.15"
                     color="teal-8"
@@ -115,9 +101,9 @@
                   >
                     <div class="column items-center">
                       <div class="text-h5 text-weight-bolder text-grey-9 line-height-tight">
-                        82%
+                        {{ avgIndeksKebersihan }}%
                       </div>
-                      <div class="text-caption text-grey-7 text-weight-medium">Baik</div>
+                      <div class="text-caption text-grey-7 text-weight-medium">{{ avgIndeksLabel }}</div>
                     </div>
                   </q-circular-progress>
                 </div>
@@ -125,7 +111,7 @@
                 <div class="col overflow-hidden">
                   <div class="text-subtitle2 text-teal-8 text-weight-bold">Insight AI:</div>
                   <div class="text-subtitle1 text-weight-bold text-teal-10 q-my-xs">
-                    Destinasi ini dalam kondisi bersih dan terawat.
+                    Destinasi ini dalam kondisi {{ avgIndeksLabel.toLowerCase() }}.
                   </div>
                   <div class="text-caption text-grey-6 q-mb-sm">
                     Indeks gabungan dari analisis visual (YOLO) & sentimen pengunjung.
@@ -136,28 +122,28 @@
                         >Visual AI</span
                       >
                       <q-linear-progress
-                        :value="0.85"
+                        :value="visualAiScore / 100"
                         color="teal-8"
                         track-color="teal-1"
                         rounded
                         size="8px"
                         class="dual-ikd-bar"
                       />
-                      <span class="text-caption text-weight-bolder text-teal-9">85%</span>
+                      <span class="text-caption text-weight-bolder text-teal-9">{{ visualAiScore }}%</span>
                     </div>
                     <div class="dual-ikd-row">
                       <span class="dual-ikd-label text-caption text-weight-bold text-grey-7"
                         >Sentimen</span
                       >
                       <q-linear-progress
-                        :value="0.72"
+                        :value="sentimentScore / 100"
                         color="blue-6"
                         track-color="blue-1"
                         rounded
                         size="8px"
                         class="dual-ikd-bar"
                       />
-                      <span class="text-caption text-weight-bolder text-blue-8">72%</span>
+                      <span class="text-caption text-weight-bolder text-blue-8">{{ sentimentScore }}%</span>
                     </div>
                   </div>
                 </div>
@@ -175,9 +161,9 @@
                       />
                     </div>
                     <div>
-                      <div class="text-h4 text-weight-bolder text-grey-9">12</div>
+                      <div class="text-h4 text-weight-bolder text-grey-9">{{ totalLaporan }}</div>
                       <div class="text-subtitle2 text-weight-bold text-grey-9">Total Laporan</div>
-                      <div class="text-caption text-grey-6">7 hari terakhir</div>
+                      <div class="text-caption text-grey-6">Di destinasi ini</div>
                     </div>
                   </div>
                 </div>
@@ -193,9 +179,9 @@
                       />
                     </div>
                     <div>
-                      <div class="text-h4 text-weight-bolder text-grey-9">3</div>
+                      <div class="text-h4 text-weight-bolder text-grey-9">{{ perluPerhatianCount }}</div>
                       <div class="text-subtitle2 text-weight-bold text-grey-9">Perlu Perhatian</div>
-                      <div class="text-caption text-grey-6">Sampah menumpuk</div>
+                      <div class="text-caption text-grey-6">Menunggu penanganan</div>
                     </div>
                   </div>
                 </div>
@@ -211,7 +197,7 @@
                       />
                     </div>
                     <div>
-                      <div class="text-h4 text-weight-bolder text-grey-9">9</div>
+                      <div class="text-h4 text-weight-bolder text-grey-9">{{ selesaiCount }}</div>
                       <div class="text-subtitle2 text-weight-bold text-grey-9">Selesai</div>
                       <div class="text-caption text-grey-6">Telah dibersihkan</div>
                     </div>
@@ -229,7 +215,7 @@
                       />
                     </div>
                     <div>
-                      <div class="text-h4 text-weight-bolder text-grey-9">72%</div>
+                      <div class="text-h4 text-weight-bolder text-grey-9">{{ sentimentScore }}%</div>
                       <div class="text-subtitle2 text-weight-bold text-grey-9">Sentimen</div>
                       <div class="text-caption text-grey-6">Positif pengunjung</div>
                     </div>
@@ -253,9 +239,11 @@
           <q-card flat bordered class="laporan-card shadow-1 overflow-hidden">
             <q-list separator>
               <q-item
-                v-for="(report, index) in reportsList"
+                v-for="(report, index) in reportsList.slice(0, 5)"
                 :key="index"
                 class="q-py-md q-px-lg items-center gap-md cursor-pointer q-gutter-x-md report-item"
+                clickable
+                @click="openReportDetailModal(report)"
               >
                 <q-img
                   :src="report.img"
@@ -265,11 +253,18 @@
                   class="report-img"
                 />
                 <q-item-section>
-                  <q-item-label class="text-subtitle1 text-weight-bold text-grey-9">
-                    {{ report.title }}
+                  <q-item-label class="text-subtitle1 text-weight-bold text-grey-9 q-mb-xs">
+                    {{ report.time }}
                   </q-item-label>
-                  <q-item-label caption class="text-body2 text-grey-7 q-mt-xs">
-                    {{ report.description }}
+                  <q-item-label caption>
+                    <q-chip
+                      dense
+                      size="sm"
+                      class="text-weight-bold q-px-sm"
+                      :class="getStatusChipClass(report.status)"
+                    >
+                      ● {{ report.status }}
+                    </q-chip>
                   </q-item-label>
                 </q-item-section>
               </q-item>
@@ -336,18 +331,18 @@
                 :options="sentimentBarOptions"
                 :series="sentimentBarSeries"
               />
-              <div class="row items-center justify-center gap-md q-mt-sm">
-                <div class="row items-center gap-xs">
+              <div class="row items-center justify-center q-gutter-x-md q-mt-sm">
+                <div class="row items-center q-gutter-x-sm">
                   <span class="sentiment-dot bg-teal-6"></span>
-                  <span class="text-caption text-weight-bold text-grey-7">Positif (65%)</span>
+                  <span class="text-caption text-weight-bold text-grey-7">Positif ({{ positivePercent }}%)</span>
                 </div>
-                <div class="row items-center gap-xs">
+                <div class="row items-center q-gutter-x-sm">
                   <span class="sentiment-dot bg-amber-6"></span>
-                  <span class="text-caption text-weight-bold text-grey-7">Netral (25%)</span>
+                  <span class="text-caption text-weight-bold text-grey-7">Netral ({{ neutralPercent }}%)</span>
                 </div>
-                <div class="row items-center gap-xs">
+                <div class="row items-center q-gutter-x-sm">
                   <span class="sentiment-dot bg-red-5"></span>
-                  <span class="text-caption text-weight-bold text-grey-7">Negatif (10%)</span>
+                  <span class="text-caption text-weight-bold text-grey-7">Negatif ({{ negativePercent }}%)</span>
                 </div>
               </div>
             </div>
@@ -389,21 +384,11 @@
                 <div class="text-subtitle2 text-weight-bold text-grey-8">
                   Review Terbaru Pengunjung
                 </div>
-                <q-btn
-                  flat
-                  dense
-                  no-caps
-                  color="teal-8"
-                  label="Lihat Semua"
-                  icon-right="chevron_right"
-                  class="text-weight-bold"
-                  size="sm"
-                />
               </div>
 
               <div class="column gap-sm">
                 <div
-                  v-for="(review, idx) in sentimentReviews"
+                  v-for="(review, idx) in sentimentReviews.slice(0, 10)"
                   :key="idx"
                   class="review-item q-pa-md"
                 >
@@ -426,13 +411,7 @@
                         </q-chip>
                       </div>
                       <div class="row items-center gap-xs q-mb-xs">
-                        <q-icon
-                          v-for="star in 5"
-                          :key="star"
-                          :name="star <= review.rating ? 'star' : 'star_border'"
-                          :color="star <= review.rating ? 'amber-7' : 'grey-4'"
-                          size="16px"
-                        />
+                        <!-- Rating removed -->
                       </div>
                       <div class="text-body2 text-grey-7" style="line-height: 1.6">
                         {{ review.text }}
@@ -451,45 +430,18 @@
                 Tulis Review Anda
               </div>
               <div class="review-form-card q-pa-lg">
-                <div class="row q-col-gutter-md q-mb-md">
-                  <div class="col-12 col-sm-6">
-                    <q-input
-                      v-model="reviewForm.name"
-                      outlined
-                      dense
-                      placeholder="Nama / Panggilan Anda"
-                      class="bg-white"
-                      :rules="[(val) => !!val || 'Masukkan nama Anda']"
-                    >
-                      <template v-slot:prepend>
-                        <q-icon name="person" color="grey-6" />
-                      </template>
-                    </q-input>
-                  </div>
-
-                  <div class="col-12 col-sm-6">
-                    <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">Rating Anda</div>
-                    <div class="row items-center gap-xs">
-                      <q-icon
-                        v-for="star in 5"
-                        :key="star"
-                        :name="star <= (hoveredStar || reviewForm.rating) ? 'star' : 'star_border'"
-                        :color="star <= (hoveredStar || reviewForm.rating) ? 'amber-7' : 'grey-4'"
-                        size="32px"
-                        class="cursor-pointer star-interactive"
-                        @click="reviewForm.rating = star"
-                        @mouseenter="hoveredStar = star"
-                        @mouseleave="hoveredStar = 0"
-                      />
-                      <span
-                        v-if="reviewForm.rating"
-                        class="text-caption text-weight-bold text-grey-6 q-ml-sm"
-                      >
-                        {{ reviewForm.rating }}/5
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <q-input
+                  v-model="reviewForm.name"
+                  outlined
+                  dense
+                  placeholder="Nama / Panggilan Anda"
+                  class="bg-white q-mb-md"
+                  :rules="[(val) => !!val || 'Masukkan nama Anda']"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="person" color="grey-6" />
+                  </template>
+                </q-input>
 
                 <q-input
                   v-model="reviewForm.text"
@@ -515,7 +467,7 @@
                     label="Kirim Review"
                     no-caps
                     class="text-weight-bold q-px-lg"
-                    :disabled="!reviewForm.name || !reviewForm.rating || !reviewForm.text"
+                    :disabled="!reviewForm.name || !reviewForm.text"
                     :loading="submittingReview"
                     @click="submitReview"
                   />
@@ -527,10 +479,69 @@
       </Motion>
     </div>
 
+    <q-dialog v-model="reportModalOpen">
+      <q-card v-if="selectedReport" style="width: 520px; border-radius: 20px" class="q-pa-lg">
+        <div class="row items-center justify-between q-mb-md">
+          <div>
+            <div class="text-subtitle2 text-teal-8 text-weight-bold">ID Laporan: {{ selectedReport.id || 'N/A' }}</div>
+            <div class="text-h6 text-weight-bold text-grey-9">{{ destName }}</div>
+          </div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </div>
+
+        <q-img
+          :src="selectedReport.img"
+          height="220px"
+          fit="cover"
+          class="rounded-borders q-mb-md shadow-1"
+        />
+        
+        <div class="q-mb-md">
+          <div class="text-subtitle2 text-weight-bold text-grey-8 q-mb-xs">Status Penanganan</div>
+          <q-chip
+            dense
+            class="text-weight-bold q-px-sm"
+            :class="getStatusChipClass(selectedReport.status)"
+          >
+            ● {{ selectedReport.status }}
+          </q-chip>
+          <div class="text-caption text-grey-6 q-mt-xs">
+            Dilaporkan pada: {{ selectedReport.time }}
+          </div>
+        </div>
+
+        <div class="bg-teal-1 q-pa-md rounded-borders q-mb-md">
+          <div class="row items-center gap-xs q-mb-xs">
+            <q-icon name="memory" color="teal-9" size="20px" />
+            <div class="text-subtitle2 text-weight-bold text-teal-10">
+              Hasil Analisis Computer Vision
+            </div>
+          </div>
+          <div class="text-caption text-teal-9">
+            Tingkat Akurasi AI: <b>{{ selectedReport.aiConfidence }}</b>
+          </div>
+          <div class="text-caption text-teal-9 q-mt-xs">
+            Estimasi Keparahan: <b>{{ selectedReport.severity }}</b>
+          </div>
+        </div>
+
+        <div v-if="selectedReport.adminNotes" class="bg-amber-1 q-pa-md rounded-borders q-mb-md">
+          <div class="row items-center gap-xs q-mb-xs">
+            <q-icon name="notes" color="amber-9" size="20px" />
+            <div class="text-subtitle2 text-weight-bold text-amber-10">
+              Catatan Petugas
+            </div>
+          </div>
+          <div class="text-caption text-amber-9" style="white-space: pre-line;">
+            {{ selectedReport.adminNotes }}
+          </div>
+        </div>
+      </q-card>
+    </q-dialog>
+
     <ReviewSuccessModal
       v-model="reviewSuccessModal"
       :sentiment="lastSubmittedSentiment"
-      :rating="lastSubmittedRating"
       :text="lastSubmittedText"
     />
 
@@ -539,46 +550,174 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Motion } from 'motion-v'
 import VueApexCharts from 'vue3-apexcharts'
+import axios from 'axios'
 import FooterComponent from '../../components/FooterComponent.vue'
 import ReviewSuccessModal from '../../components/ReviewSuccessModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 
+const spotId = ref(null)
+
+
 const destName = computed(() => route.query.name || 'Pantai Batu Hoda')
-const destStatus = computed(() => route.query.status || 'Perlu Perhatian')
-const destDescription = ref(
-  'Pantai Hoda merupakan objek wisata alam yang berada di Pulau Samosir, Sumatera Utara. Destinasi ini dikenal dengan pantainya yang bersih, panorama Danau Toba yang indah, serta lingkungan yang masih alami. Pantai Hoda menjadi lokasi yang populer untuk rekreasi, fotografi, dan menikmati keindahan alam Danau Toba.',
-)
+const destStatus = ref('Perlu Perhatian')
+const destStatusColor = computed(() => {
+  const status = destStatus.value.toLowerCase()
+  if (status.includes('aman')) return 'bg-green-1 text-green-9'
+  if (status.includes('perlu penanganan')) return 'bg-red-1 text-red-9'
+  if (status.includes('perlu perhatian')) return 'bg-orange-1 text-orange-9'
+  return 'bg-grey-1 text-grey-9'
+})
+const destDescription = ref('Deskripsi destinasi akan muncul di sini.')
 const heroImage = ref('https://picsum.photos/seed/toba1/1200/600')
-const activeImageIndex = ref(0)
-const galleryImages = ref([
-  'https://picsum.photos/seed/toba1/300/200',
-  'https://picsum.photos/seed/toba2/300/200',
-  'https://picsum.photos/seed/toba3/300/200',
+let slideInterval = null
+const galleryList = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/spots/')
+    const spots = res.data
+    const spot = spots.find(s => s.name === destName.value)
+    if (spot) {
+      spotId.value = spot.id
+      if (spot.status) {
+        destStatus.value = spot.status
+      }
+      if (spot.description) {
+        destDescription.value = spot.description
+      }
+      if (spot.img) {
+        heroImage.value = spot.img
+      }
+      fetchSpotDetails(spot.id)
+      fetchReviews()
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data destinasi:', err)
+  }
+})
+
+onUnmounted(() => {
+  if (slideInterval) clearInterval(slideInterval)
+})
+
+const aspectSentimentsData = ref({
+  kebersihan: 0,
+  fasilitas: 0,
+  pengelolaan: 0,
+  keamanan: 0
+})
+
+const aspectSentiments = computed(() => [
+  { name: 'Kebersihan', icon: 'cleaning_services', score: aspectSentimentsData.value.kebersihan, color: 'orange-8', trackColor: 'orange-1', theme: 'orange' },
+  { name: 'Fasilitas', icon: 'chair', score: aspectSentimentsData.value.fasilitas, color: 'teal-8', trackColor: 'teal-1', theme: 'teal' },
+  { name: 'Pengelolaan', icon: 'manage_accounts', score: aspectSentimentsData.value.pengelolaan, color: 'orange-8', trackColor: 'orange-1', theme: 'orange' },
+  { name: 'Keamanan', icon: 'shield', score: aspectSentimentsData.value.keamanan, color: 'teal-8', trackColor: 'teal-1', theme: 'teal' },
 ])
 
-const reportsList = ref([
-  {
-    title: 'Sampah di Pinggir Pantai',
-    description: 'Sampah di Pinggir Pantai',
-    img: 'https://picsum.photos/seed/toba1/300/200',
-  },
-  {
-    title: 'Sampah di Pinggir Pantai',
-    description: 'Sampah plastik menumpuk dekat area gazebo warga.',
-    img: 'https://picsum.photos/seed/toba2/300/200',
-  },
-  {
-    title: 'Sampah di Pinggir Pantai',
-    description: 'Tumpukan sisa kemasan makanan disekitar dermaga wisata.',
-    img: 'https://picsum.photos/seed/toba3/300/200',
-  },
-])
+async function fetchReviews() {
+  if (!spotId.value) return
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/reviews/' + spotId.value)
+    
+    if (res.data.aspect_sentiments) {
+      aspectSentimentsData.value = res.data.aspect_sentiments
+    }
+    
+    sentimentReviews.value = res.data.reviews.map(r => {
+      let color = 'amber-8'
+      let chipClass = 'bg-amber-1 text-amber-9'
+      let label = '● Netral'
+      
+      if (r.sentiment_label === 'Positif') {
+        color = 'teal-7'
+        chipClass = 'bg-teal-1 text-teal-9'
+        label = '● Positif'
+      } else if (r.sentiment_label === 'Negatif') {
+        color = 'red-5'
+        chipClass = 'bg-red-1 text-red-9'
+        label = '● Negatif'
+      }
+
+      const initials = (r.reviewer_name || 'Anonim').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+      
+      const date = new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+      
+      return {
+        name: r.reviewer_name,
+        initials: initials,
+        avatarColor: color,
+        text: r.text,
+        date: date,
+        sentimentLabel: label,
+        sentimentClass: chipClass,
+      }
+    })
+  } catch (err) {
+    console.error('Gagal mengambil reviews:', err)
+  }
+}
+
+const reportsList = ref([])
+
+const reportModalOpen = ref(false)
+const selectedReport = ref(null)
+
+const mapBackendStatus = (status) => {
+  if (status === 'pending') return 'Perlu Penanganan'
+  if (status === 'cleaned') return 'Selesai'
+  if (status === 'Perlu Penanganan') return 'Perlu Penanganan'
+  if (status === 'Perlu Perhatian') return 'Perlu Perhatian'
+  if (status === 'Selesai') return 'Selesai'
+  return status || 'Perlu Penanganan'
+}
+
+function openReportDetailModal(report) {
+  selectedReport.value = report
+  reportModalOpen.value = true
+}
+
+function getStatusChipClass(status) {
+  if (!status) return 'bg-red-1 text-red-9'
+  const s = status.toLowerCase()
+  if (s.includes('selesai') || s.includes('cleaned')) return 'bg-teal-1 text-teal-9'
+  if (s.includes('perhatian')) return 'bg-orange-1 text-orange-9'
+  return 'bg-red-1 text-red-9'
+}
+
+async function fetchSpotDetails(id) {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/spots/' + id)
+    if (res.data.reports) {
+      reportsList.value = res.data.reports.map(r => {
+        const date = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'
+        return {
+          id: r.id ? `#RPT-${r.id.toString().padStart(4, '0')}` : 'N/A',
+          time: date,
+          img: r.photo_path || 'https://picsum.photos/seed/report1/300/200',
+          ai_score: r.ai_score,
+          status: mapBackendStatus(r.status),
+          adminNotes: r.admin_notes,
+          aiConfidence: r.ai_score ? `${(r.ai_score * 100).toFixed(0)}%` : '85%',
+          severity: r.severity || 'Sedang'
+        }
+      })
+      
+      const gl = res.data.reports.filter(r => r.photo_path).map(r => ({
+        id: r.id.toString(),
+        src: r.photo_path
+      }))
+      if (gl.length > 0) galleryList.value = gl
+    }
+  } catch (err) {
+    console.error('Gagal mengambil detail spot dan reports:', err)
+  }
+}
 
 function goBack() {
   if (window.history.length > 1) {
@@ -588,19 +727,37 @@ function goBack() {
   }
 }
 
-const aspectSentiments = ref([
-  { name: 'Kebersihan', icon: 'cleaning_services', score: 68, color: 'orange-8', trackColor: 'orange-1', theme: 'orange' },
-  { name: 'Fasilitas', icon: 'chair', score: 78, color: 'teal-8', trackColor: 'teal-1', theme: 'teal' },
-  { name: 'Pengelolaan', icon: 'manage_accounts', score: 62, color: 'orange-8', trackColor: 'orange-1', theme: 'orange' },
-  { name: 'Keamanan', icon: 'shield', score: 85, color: 'teal-8', trackColor: 'teal-1', theme: 'teal' },
-])
+const sentimentReviews = ref([])
 
-const sentimentReviews = ref([
-  { name: 'Andi Siregar', initials: 'AS', avatarColor: 'teal-7', rating: 4, text: 'Pantainya cukup bersih dan pemandangan indah. Hanya saja ada beberapa sampah plastik di pinggir pantai yang perlu dibersihkan.', date: '2 hari lalu', sentimentLabel: '● Positif', sentimentClass: 'bg-teal-1 text-teal-9' },
-  { name: 'Maria Hutapea', initials: 'MH', avatarColor: 'red-5', rating: 2, text: 'Sangat kecewa. Sampah berserakan di mana-mana, terutama di area parkir dan sekitar dermaga. Bau tidak sedap juga tercium.', date: '3 hari lalu', sentimentLabel: '● Negatif', sentimentClass: 'bg-red-1 text-red-9' },
-  { name: 'Budi Panjaitan', initials: 'BP', avatarColor: 'blue-7', rating: 5, text: 'Destinasi yang sangat terawat! Petugas kebersihan rajin membersihkan area pantai. Fasilitas toilet juga bersih. Sangat recommended!', date: '5 hari lalu', sentimentLabel: '● Positif', sentimentClass: 'bg-teal-1 text-teal-9' },
-  { name: 'Sari Manurung', initials: 'SM', avatarColor: 'amber-8', rating: 3, text: 'Pemandangan bagus tapi biasa saja dari segi kebersihan. Ada beberapa tempat sampah yang sudah penuh dan belum diangkut.', date: '1 minggu lalu', sentimentLabel: '● Netral', sentimentClass: 'bg-amber-1 text-amber-9' },
-])
+const totalLaporan = computed(() => reportsList.value.length)
+const perluPerhatianCount = computed(() => reportsList.value.filter(r => r.status === 'Perlu Penanganan' || r.status === 'Perlu Perhatian' || r.status === 'pending').length)
+const selesaiCount = computed(() => reportsList.value.filter(r => r.status === 'Selesai' || r.status === 'cleaned').length)
+
+const visualAiScore = computed(() => {
+  const activeReports = reportsList.value.filter(r => r.status !== 'Selesai' && r.status !== 'cleaned')
+  if (activeReports.length === 0) return 100 // Default if no reports or all are cleaned
+
+  const totalPenalty = activeReports.reduce((acc, r) => acc + ((r.ai_score || 0.5) * 100), 0)
+  return Math.max(0, Math.round(100 - totalPenalty))
+})
+
+const sentimentScore = computed(() => {
+  if (sentimentReviews.value.length === 0) return 100 // Default if no reviews
+  const negCount = sentimentReviews.value.filter(r => r.sentimentLabel === '● Negatif').length
+  return Math.max(0, 100 - (negCount * 10))
+})
+
+const avgIndeksKebersihan = computed(() => {
+  return Math.round((visualAiScore.value + sentimentScore.value) / 2)
+})
+
+const avgIndeksLabel = computed(() => {
+  if (reportsList.value.length === 0 && sentimentReviews.value.length === 0) return 'Aman'
+  if (avgIndeksKebersihan.value >= 80) return 'Aman'
+  if (avgIndeksKebersihan.value >= 60) return 'Baik'
+  if (avgIndeksKebersihan.value >= 40) return 'Sedang'
+  return 'Buruk'
+})
 
 const sentimentBarOptions = computed(() => ({
   chart: { type: 'bar', height: 80, stacked: true, stackType: '100%', toolbar: { show: false } },
@@ -614,11 +771,38 @@ const sentimentBarOptions = computed(() => ({
   dataLabels: { enabled: false },
 }))
 
-const sentimentBarSeries = ref([
-  { name: 'Positif', data: [26] },
-  { name: 'Netral', data: [10] },
-  { name: 'Negatif', data: [4] },
-])
+const sentimentBarSeries = computed(() => {
+  const pos = sentimentReviews.value.filter(r => r.sentimentLabel === '● Positif').length
+  const net = sentimentReviews.value.filter(r => r.sentimentLabel === '● Netral').length
+  const neg = sentimentReviews.value.filter(r => r.sentimentLabel === '● Negatif').length
+  
+  return [
+    { name: 'Positif', data: [pos] },
+    { name: 'Netral', data: [net] },
+    { name: 'Negatif', data: [neg] },
+  ]
+})
+
+const positivePercent = computed(() => {
+  if (sentimentReviews.value.length === 0) return 0
+  const total = sentimentReviews.value.length || 1
+  const pos = sentimentReviews.value.filter(r => r.sentimentLabel === '● Positif').length
+  return Math.round((pos / total) * 100)
+})
+
+const neutralPercent = computed(() => {
+  if (sentimentReviews.value.length === 0) return 0
+  const total = sentimentReviews.value.length || 1
+  const net = sentimentReviews.value.filter(r => r.sentimentLabel === '● Netral').length
+  return Math.round((net / total) * 100)
+})
+
+const negativePercent = computed(() => {
+  if (sentimentReviews.value.length === 0) return 0
+  const total = sentimentReviews.value.length || 1
+  const neg = sentimentReviews.value.filter(r => r.sentimentLabel === '● Negatif').length
+  return Math.round((neg / total) * 100)
+})
 
 const trendChartOptions = computed(() => ({
   chart: { type: 'area', height: 220, toolbar: { show: false }, fontFamily: 'Inter, sans-serif', zoom: { enabled: false } },
@@ -627,79 +811,65 @@ const trendChartOptions = computed(() => ({
   stroke: { curve: 'smooth', width: 3 },
   markers: { size: 4, colors: ['#ffffff'], strokeColors: ['#0f766e', '#3b82f6'], strokeWidth: 2.5, hover: { size: 6 } },
   grid: { borderColor: '#f1f5f9', strokeDashArray: 3, padding: { left: 10, right: 10 } },
-  xaxis: { categories: ['Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'], labels: { style: { colors: '#64748b', fontSize: '11px', fontWeight: 600 } }, axisBorder: { show: false }, axisTicks: { show: false } },
+  xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Bulan Ini'], labels: { style: { colors: '#64748b', fontSize: '11px', fontWeight: 600 } }, axisBorder: { show: false }, axisTicks: { show: false } },
   yaxis: { min: 0, max: 100, tickAmount: 4, labels: { style: { colors: '#64748b', fontSize: '11px', fontWeight: 600 }, formatter: (val) => `${val}%` } },
   legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px', fontWeight: 600, markers: { size: 5, offsetX: -3 }, itemMargin: { horizontal: 12 } },
   tooltip: { theme: 'dark', y: { formatter: (val) => `${val}%` } },
 }))
 
-const trendChartSeries = ref([
-  { name: 'IKD Visual', data: [78, 82, 75, 88, 84, 85] },
-  { name: 'IKD Sentimen', data: [65, 60, 68, 72, 70, 72] },
-])
+const trendChartSeries = computed(() => {
+  if (reportsList.value.length === 0 && sentimentReviews.value.length === 0) {
+    return [
+      { name: 'IKD Visual', data: [0, 0, 0, 0, 0, 0] },
+      { name: 'IKD Sentimen', data: [0, 0, 0, 0, 0, 0] },
+    ]
+  }
 
-const reviewForm = ref({ name: '', rating: 0, text: '' })
-const hoveredStar = ref(0)
+  // Mock historical data that leads up to the current real data
+  const currentVisual = visualAiScore.value
+  const currentSentiment = sentimentScore.value
+  
+  return [
+    { name: 'IKD Visual', data: [75, 78, 80, 82, 80, currentVisual] },
+    { name: 'IKD Sentimen', data: [60, 65, 68, 70, 72, currentSentiment] },
+  ]
+})
+
+const reviewForm = ref({ name: '', text: '' })
 const submittingReview = ref(false)
 const reviewSuccessModal = ref(false)
 const lastSubmittedSentiment = ref(null)
-const lastSubmittedRating = ref(0)
 const lastSubmittedText = ref('')
 
-function detectSentiment(text, rating) {
-  const lower = text.toLowerCase()
-  const positiveWords = ['bersih', 'bagus', 'indah', 'terawat', 'nyaman', 'rapi', 'segar', 'recommended', 'mantap', 'keren', 'puas', 'senang', 'suka']
-  const negativeWords = ['kotor', 'sampah', 'jorok', 'bau', 'kumuh', 'kecewa', 'jelek', 'buruk', 'rusak', 'berantakan', 'menumpuk', 'berserakan', 'parah']
-
-  let posCount = positiveWords.filter((w) => lower.includes(w)).length
-  let negCount = negativeWords.filter((w) => lower.includes(w)).length
-
-  const negations = ['tidak', 'kurang', 'belum', 'bukan']
-  for (const neg of negations) {
-    for (const pos of positiveWords) {
-      if (lower.includes(`${neg} ${pos}`)) { posCount--; negCount++ }
-    }
-    for (const negW of negativeWords) {
-      if (lower.includes(`${neg} ${negW}`)) { negCount--; posCount++ }
-    }
-  }
-
-  const textScore = posCount - negCount
-  const ratingBias = rating >= 4 ? 1 : rating <= 2 ? -1 : 0
-  const finalScore = textScore + ratingBias
-
-  if (finalScore > 0) return { label: '● Positif', chipClass: 'bg-teal-1 text-teal-9', color: 'teal-7' }
-  else if (finalScore < 0) return { label: '● Negatif', chipClass: 'bg-red-1 text-red-9', color: 'red-5' }
-  else return { label: '● Netral', chipClass: 'bg-amber-1 text-amber-9', color: 'amber-8' }
-}
-
 function submitReview() {
-  if (!reviewForm.value.name || !reviewForm.value.rating || !reviewForm.value.text) return
+  if (!reviewForm.value.name || !reviewForm.value.text || !spotId.value) return
   submittingReview.value = true
 
-  setTimeout(() => {
-    const sentiment = detectSentiment(reviewForm.value.text, reviewForm.value.rating)
-    lastSubmittedRating.value = reviewForm.value.rating
-    lastSubmittedText.value = reviewForm.value.text
-    lastSubmittedSentiment.value = sentiment
+  const payload = {
+    spot_id: spotId.value,
+    reviewer_name: reviewForm.value.name,
+    text: reviewForm.value.text
+  }
 
-    const initials = reviewForm.value.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+  axios.post('http://127.0.0.1:5000/api/reviews/', payload)
+    .then((res) => {
+      const backendLabel = res.data.sentiment_label
+      let sentimentObj = { label: '● Netral', chipClass: 'bg-amber-1 text-amber-9', color: 'amber-8' }
+      if (backendLabel === 'Positif') sentimentObj = { label: '● Positif', chipClass: 'bg-teal-1 text-teal-9', color: 'teal-7' }
+      else if (backendLabel === 'Negatif') sentimentObj = { label: '● Negatif', chipClass: 'bg-red-1 text-red-9', color: 'red-5' }
 
-    sentimentReviews.value.unshift({
-      name: reviewForm.value.name,
-      initials: initials,
-      avatarColor: sentiment.color,
-      rating: reviewForm.value.rating,
-      text: reviewForm.value.text,
-      date: 'Baru saja',
-      sentimentLabel: sentiment.label,
-      sentimentClass: sentiment.chipClass,
+      lastSubmittedText.value = reviewForm.value.text
+      lastSubmittedSentiment.value = sentimentObj
+
+      reviewSuccessModal.value = true
+      submittingReview.value = false
+      reviewForm.value = { name: '', text: '' }
+      fetchReviews()
     })
-
-    reviewSuccessModal.value = true
-    submittingReview.value = false
-    reviewForm.value = { name: '', rating: 0, text: '' }
-  }, 600)
+    .catch((err) => {
+      console.error('Gagal mengirim review:', err)
+      submittingReview.value = false
+    })
 }
 </script>
 
@@ -708,7 +878,7 @@ function submitReview() {
 .hero-container { position: relative; width: 100%; min-height: 520px; border-bottom: 1px solid #e5e7eb; overflow: hidden; }
 .hero-bg-img { width: 100%; height: 100%; }
 .hero-content { min-height: 520px; z-index: 2; }
-.hero-left { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05); z-index: 2; }
+.hero-left { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 4px 0 24px rgba(0, 0, 0, 0.05); z-index: 2; }
 .title-text { letter-spacing: -0.5px; }
 .status-chip { border: 1px solid #fed7aa; border-radius: 8px; }
 .description-text { line-height: 1.7; }
@@ -746,4 +916,29 @@ function submitReview() {
 .review-form-card:focus-within { border-color: #0d9488; background: #f8fffe; }
 .star-interactive { transition: transform 0.15s ease; }
 .star-interactive:hover { transform: scale(1.25); }
+
+.marquee-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 8px;
+}
+.marquee-content {
+  display: flex;
+  gap: 8px;
+  animation: scroll-left 15s linear infinite;
+}
+.marquee-track:hover .marquee-content {
+  animation-play-state: paused;
+}
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-100% - 8px)); }
+}
 </style>

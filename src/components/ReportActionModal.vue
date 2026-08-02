@@ -9,7 +9,12 @@
     <q-card v-if="report" style="width: 440px; border-radius: 20px" class="q-pa-lg">
       <div class="text-h6 text-weight-bold text-grey-9 q-mb-xs">Tindak Lanjuti Laporan</div>
       <div class="text-caption text-grey-6 q-mb-md">
-        Ubah status penanganan untuk laporan di <b>{{ report.location }}</b>
+        <template v-if="report.isBatch">
+          Ubah status penanganan untuk <b>{{ report.batchText }}</b>
+        </template>
+        <template v-else>
+          Ubah status penanganan untuk laporan di <b>{{ report.location }}</b>
+        </template>
       </div>
 
       <div class="q-my-sm text-weight-bold text-grey-8">Status Penanganan</div>

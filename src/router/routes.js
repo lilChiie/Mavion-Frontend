@@ -50,8 +50,12 @@ const routes = [
         component: () => import('../pages/Admin/AdminMonitoringPage.vue'),
       },
       {
-        path: 'input-area',
-        component: () => import('../pages/Admin/AdminInputAreaPage.vue'),
+        path: 'destinasi',
+        component: () => import('../pages/Admin/AdminDestinasiPage.vue'),
+      },
+      {
+        path: 'destinasi/add',
+        component: () => import('../pages/Admin/AdminAddDestinasiPage.vue'),
       },
     ],
   },

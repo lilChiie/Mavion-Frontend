@@ -35,16 +35,7 @@
             {{ sentiment.label }}
           </q-chip>
         </div>
-        <div class="row items-center gap-xs q-mb-xs">
-          <q-icon
-            v-for="star in 5"
-            :key="star"
-            :name="star <= rating ? 'star' : 'star_border'"
-            :color="star <= rating ? 'amber-7' : 'grey-4'"
-            size="16px"
-          />
-          <span class="text-caption text-weight-bold text-grey-7 q-ml-xs">{{ rating }}/5</span>
-        </div>
+        <!-- Rating removed -->
         <div class="text-caption text-grey-8 ellipsis-2-lines italic">
           "{{ text }}"
         </div>
@@ -75,10 +66,7 @@ defineProps({
     type: Object,
     default: null,
   },
-  rating: {
-    type: Number,
-    default: 5,
-  },
+
   text: {
     type: String,
     default: '',

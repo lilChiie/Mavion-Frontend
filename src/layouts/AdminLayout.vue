@@ -7,14 +7,8 @@
       bordered
     >
       <div>
-        <div class="q-pa-lg row items-center gap-md border-bottom q-gutter-x-sm">
-          <q-img src="../assets/Logo.png" width="40px" height="40px" fit="contain" />
-          <div>
-            <div class="text-subtitle1 text-weight-bolder text-teal-10 font-instrument">
-              MAHORBASA
-            </div>
-            <div class="text-caption text-grey-6" style="margin-top: -4px">VISION</div>
-          </div>
+        <div class="q-pa-md row items-center justify-center border-bottom">
+          <q-img src="../assets/Logo_1.png" width="160px" fit="contain" />
         </div>
 
         <div class="q-pa-md q-gutter-y-xs">
@@ -68,7 +62,7 @@
 
         <div class="row items-center q-gutter-x-md">
           <div
-            class="date-pill row items-center gap-xs text-caption text-grey-7 text-weight-medium bg-grey-2 q-py-xs q-px-md rounded-borders gt-xs"
+            class="date-pill row items-center gap-xs text-caption text-grey-7 text-weight-medium q-py-xs q-px-sm gt-xs"
           >
             <q-icon name="today" color="teal-8" size="18px" />
             <span class="q-mx-sm">{{ currentDate }}</span>
@@ -77,12 +71,11 @@
           <q-separator vertical inset class="gt-xs" />
 
           <div
-            class="profile-pill row items-center gap-sm q-py-xs q-px-sm rounded-borders q-gutter-x-md"
+            class="profile-pill row items-center gap-sm q-py-xs q-px-sm q-gutter-x-md"
           >
             <q-avatar size="34px" color="teal-8" text-color="white" icon="admin_panel_settings" />
             <div class="gt-xs column justify-center" style="line-height: 1.2">
-              <div class="text-caption text-weight-bold text-grey-9">Administrator</div>
-              <div class="text-caption text-grey-6" style="font-size: 11px">admin@mavion.id</div>
+              <div class="text-caption text-weight-bold text-grey-9" style="font-size: 13px">Administrator</div>
             </div>
           </div>
         </div>
@@ -125,12 +118,11 @@ const navItems = [
     label: 'Monitoring',
     icon: 'analytics',
     to: '/admin/monitoring',
-    badge: '12 Baru',
   },
   {
-    label: 'Input Area Wisata',
-    icon: 'add_location_alt',
-    to: '/admin/input-area',
+    label: 'Destinasi Wisata',
+    icon: 'location_on',
+    to: '/admin/destinasi',
   },
 ]
 
@@ -181,12 +173,6 @@ function handleLogout() {
   border: 1px dashed #99f6e4;
 }
 
-.profile-pill,
-.date-pill {
-  border: 1px solid #e5e7eb;
-  background: #f8fafc;
-  border-radius: 12px;
-}
 
 .logout-btn:hover {
   background: #ffe4e6;

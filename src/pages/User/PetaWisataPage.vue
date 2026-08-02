@@ -22,7 +22,7 @@
             outlined
             rounded
             class="bg-white search-input"
-            style="min-width: 320px"
+            style="width: 320px; max-width: 100%;"
           >
             <template v-slot:prepend>
               <q-icon name="search" color="grey-6" />
@@ -37,22 +37,10 @@
             rounded
             behavior="menu"
             options-dense
-            popup-content-style="width: 200px; border-radius: 12px;"
+            popup-content-style="border-radius: 12px;"
             class="bg-white select-input"
-            style="width: 180px"
+            style="width: 320px; max-width: 100%;"
           />
-
-          <div class="row items-center gap-xs q-ml-sm">
-            <q-chip dense class="bg-teal-1 text-teal-9 text-weight-bold">
-              ● Aman: {{ countAman }}
-            </q-chip>
-            <q-chip dense class="bg-orange-1 text-orange-9 text-weight-bold">
-              ● Perlu Perhatian: {{ countPerhatian }}
-            </q-chip>
-            <q-chip dense class="bg-red-1 text-red-9 text-weight-bold">
-              ● Perlu Penanganan: {{ countPenanganan }}
-            </q-chip>
-          </div>
         </div>
       </div>
     </Motion>
@@ -133,35 +121,62 @@
       <div class="col-12 col-md-8 column right-panel relative-position full-height">
         <div ref="mapContainer" class="full-height full-width map-el"></div>
 
-        <q-card flat class="selected-dest-overlay shadow-4" v-if="selectedDest">
-          <q-card-section class="q-pa-md">
-            <div class="text-subtitle1 text-weight-bold text-grey-9">{{ selectedDest.name }}</div>
-            <div class="q-my-xs">
-              <q-chip
-                dense
-                unremovable
-                size="11px"
-                class="text-weight-bold"
-                :class="getStatusChipClass(selectedDest.status)"
-              >
-                ● {{ selectedDest.status }}
-              </q-chip>
-            </div>
-            <div class="text-caption text-grey-6 q-mb-sm">
-              {{ selectedDest.laporanCount }} laporan kebersihan terbaru
-            </div>
-
-            <q-btn
-              unelevated
-              rounded
-              color="teal-8"
-              label="Lihat Detail Destinasi"
-              class="full-width text-weight-bold"
-              no-caps
-              @click="goToDetail(selectedDest)"
+        <!-- Destination Modal -->
+        <q-dialog v-model="showDestModal">
+          <q-card style="width: 320px; max-width: 90vw; border-radius: 16px;" class="q-pa-sm">
+            <q-img 
+              :src="selectedDest?.img || 'https://picsum.photos/400/300?random=' + (selectedDest?.id || 1)" 
+              height="160px" 
+              fit="cover" 
+              style="border-radius: 12px;"
+              class="q-mb-sm"
             />
-          </q-card-section>
-        </q-card>
+            <q-card-section class="q-pa-sm q-pt-none">
+              <div class="text-h6 text-weight-bolder text-grey-10 q-mb-xs" style="line-height: 1.2;">
+                {{ selectedDest?.name }}
+              </div>
+              <div class="row items-center q-gutter-x-sm q-mb-sm">
+                <span 
+                  class="ref-status-dot" 
+                  :class="(selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis') ? 'bg-red' : (selectedDest?.status === 'Perlu Perhatian' ? 'bg-orange' : 'bg-green')"
+                  style="width: 12px; height: 12px; border-radius: 50%; display: inline-block;"
+                ></span>
+                <span class="text-weight-bold text-grey-10 text-subtitle2" style="font-size: 13px;">
+                  {{ selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis' ? 'Perlu Penanganan' : (selectedDest?.status === 'Perlu Perhatian' ? 'Perlu Perhatian' : 'Aman') }}
+                </span>
+              </div>
+              <div class="text-grey-6 text-caption q-mb-sm" style="font-size: 12px;">
+                {{ selectedDestReports.length }} laporan terbaru
+              </div>
+              <q-scroll-area
+                horizontal
+                style="height: 100px; width: 100%;"
+                class="q-mb-sm"
+                v-if="selectedDestReports.length > 0"
+              >
+                <div class="row no-wrap q-gutter-x-sm">
+                  <q-img 
+                    v-for="(report, idx) in selectedDestReports" 
+                    :key="idx"
+                    :src="'http://127.0.0.1:5000/uploads/' + report.photo_path" 
+                    style="width: 96px; height: 96px; border-radius: 8px; flex: 0 0 auto;"
+                  />
+                </div>
+              </q-scroll-area>
+            </q-card-section>
+            <q-card-actions align="center" class="q-px-sm q-pb-sm q-pt-none">
+              <q-btn 
+                outline 
+                rounded 
+                color="teal-8" 
+                class="text-weight-bold full-width" 
+                label="Lihat Detail" 
+                @click="goToDetail(selectedDest)"
+                v-close-popup 
+              />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
       </div>
     </div>
 
@@ -170,9 +185,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Motion } from 'motion-v'
+import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import FooterComponent from '../../components/FooterComponent.vue'
@@ -197,52 +213,27 @@ const searchQuery = ref('')
 const selectedCategory = ref('Semua')
 const categoryOptions = ['Semua', 'Aman', 'Perlu Perhatian', 'Perlu Penanganan']
 
-const destinations = ref([
-  {
-    name: 'Pantai Batu Hoda',
-    status: 'Perlu Perhatian',
-    laporanCount: 3,
-    img: 'https://picsum.photos/seed/toba1/400/200',
-    coords: [2.6847, 98.8722],
-  },
-  {
-    name: 'Pantai Simanindo',
-    status: 'Perlu Perhatian',
-    laporanCount: 5,
-    img: 'https://picsum.photos/seed/toba2/400/200',
-    coords: [2.7481, 98.7456],
-  },
-  {
-    name: 'Pelabuhan Tomok',
-    status: 'Perlu Penanganan',
-    laporanCount: 8,
-    img: 'https://picsum.photos/seed/toba3/400/200',
-    coords: [2.6653, 98.8541],
-  },
-  {
-    name: 'Bukit Holbung',
-    status: 'Aman',
-    laporanCount: 1,
-    img: 'https://picsum.photos/seed/toba4/400/200',
-    coords: [2.5531, 98.7123],
-  },
-  {
-    name: 'Menara Pandang Tele',
-    status: 'Perlu Perhatian',
-    laporanCount: 4,
-    img: 'https://picsum.photos/seed/toba5/400/200',
-    coords: [2.5489, 98.6312],
-  },
-  {
-    name: 'Desa Wisata Tomok',
-    status: 'Aman',
-    laporanCount: 2,
-    img: 'https://picsum.photos/seed/toba6/400/200',
-    coords: [2.658, 98.8612],
-  },
-])
+const destinations = ref([])
 
-const selectedDest = ref(destinations.value[0])
+const mapReports = ref([])
+
+async function fetchDestinations() {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/spots/')
+    destinations.value = res.data
+  } catch (error) {
+    console.error('Error fetching destinations:', error)
+  }
+  
+  try {
+    const resRep = await axios.get('http://127.0.0.1:5000/api/public/reports')
+    mapReports.value = resRep.data
+  } catch (error) {
+    console.error('Error fetching map reports:', error)
+  }
+}
+
+const selectedDest = ref(null)
 
 const filteredDestinations = computed(() => {
   return destinations.value.filter((d) => {
@@ -252,25 +243,32 @@ const filteredDestinations = computed(() => {
   })
 })
 
-const countAman = computed(() => destinations.value.filter((d) => d.status === 'Aman').length)
-const countPerhatian = computed(
-  () => destinations.value.filter((d) => d.status === 'Perlu Perhatian').length,
-)
-const countPenanganan = computed(
-  () => destinations.value.filter((d) => d.status === 'Perlu Penanganan').length,
-)
-
 function getStatusChipClass(status) {
   if (status === 'Aman') return 'bg-teal-1 text-teal-9'
   if (status === 'Perlu Perhatian') return 'bg-orange-1 text-orange-9'
   return 'bg-red-1 text-red-9'
 }
 
+const showDestModal = ref(false)
+const selectedDestReports = ref([])
+
 function selectDestination(item) {
   selectedDest.value = item
+  selectedDestReports.value = mapReports.value.filter(r => {
+    if (r.spot_id !== item.id) return false;
+    let stat = r.status || 'pending';
+    if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return false;
+    if (stat === 'pending') {
+      return r.ai_score >= 0.4;
+    }
+    return stat === 'Perlu Penanganan' || stat === 'Kritis' || stat === 'Perlu Perhatian';
+  })
+  
   if (map.value && item.coords) {
     map.value.flyTo(item.coords, 12, { duration: 1 })
   }
+  
+  showDestModal.value = true
 }
 
 function goToDetail(item) {
@@ -288,14 +286,87 @@ const map = ref(null)
 const markers = ref([])
 
 const lakePolygonCoordinates = [
-  [2.85, 98.65],
-  [2.92, 98.85],
-  [2.75, 99.05],
-  [2.45, 99.0],
-  [2.35, 98.9],
-  [2.45, 98.65],
-  [2.7, 98.58],
+  [3.05, 98.45],
+  [2.95, 98.85],
+  [2.75, 99.20],
+  [2.45, 99.25],
+  [2.25, 99.15],
+  [2.25, 98.80],
+  [2.40, 98.60],
+  [2.75, 98.50],
 ]
+
+function updateMarkers() {
+  if (!map.value) return
+  
+  // Clear existing markers
+  markers.value.forEach(m => map.value.removeLayer(m))
+  markers.value = []
+  
+  // Add new markers
+  filteredDestinations.value.forEach((d) => {
+    let color = 'green'
+    let status = d.status || 'Aman'
+    if (status === 'Perlu Penanganan' || status === 'Kritis') {
+      color = 'red'
+      status = 'Perlu Penanganan'
+    } else if (status === 'Perlu Perhatian') {
+      color = 'orange'
+    }
+    
+    const hexColor = color === 'red' ? '#e53935' : color === 'orange' ? '#d97706' : '#10b981'
+    
+    const circle = L.circle(d.coords, {
+      color: hexColor,
+      fillColor: hexColor,
+      fillOpacity: 0.15,
+      weight: 1,
+      radius: 1200
+    }).addTo(map.value)
+    markers.value.push(circle)
+
+    const customIcon = L.divIcon({
+      className: 'bg-transparent',
+      html: `<svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 0C7.16344 0 0 7.16344 0 16C0 27.2 16 48 16 48C16 48 32 27.2 32 16C32 7.16344 24.8366 0 16 0ZM16 24C11.5817 24 8 20.4183 8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16C24 20.4183 20.4183 24 16 24Z" fill="${hexColor}"/></svg>`,
+      iconSize: [32, 48],
+      iconAnchor: [16, 48],
+      tooltipAnchor: [16, -24]
+    })
+
+    const marker = L.marker(d.coords, { icon: customIcon }).addTo(map.value)
+    
+    marker.on('click', () => selectDestination(d))
+    markers.value.push(marker)
+  })
+
+  mapReports.value.forEach((r) => {
+    let stat = r.status || 'pending'
+    if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return
+    if (stat === 'pending' && r.ai_score < 0.4) return
+
+    let dotColor = '#10b981'
+    if (r.ai_score >= 0.7 || stat === 'Perlu Penanganan' || stat === 'Kritis') {
+      dotColor = '#e53935'
+    } else if (stat === 'Perlu Perhatian' || (stat === 'pending' && r.ai_score >= 0.4)) {
+      dotColor = '#d97706'
+    }
+    
+    const dot = L.circleMarker([r.latitude, r.longitude], {
+      radius: 4,
+      fillColor: dotColor,
+      color: '#ffffff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(map.value)
+    
+    markers.value.push(dot)
+  })
+}
+
+watch(filteredDestinations, () => {
+  updateMarkers()
+})
 
 function initMap() {
   if (!mapContainer.value) return
@@ -316,16 +387,7 @@ function initMap() {
     fillOpacity: 0.3,
   }).addTo(map.value)
 
-  destinations.value.forEach((d) => {
-    const marker = L.marker(d.coords).addTo(map.value)
-    marker.bindTooltip(d.name, {
-      permanent: true,
-      direction: 'top',
-      className: 'map-tooltip-badge',
-    })
-    marker.on('click', () => selectDestination(d))
-    markers.value.push(marker)
-  })
+  updateMarkers()
 
   setTimeout(() => {
     map.value?.invalidateSize()
@@ -333,6 +395,7 @@ function initMap() {
 }
 
 onMounted(async () => {
+  await fetchDestinations()
   await nextTick()
   initMap()
 })

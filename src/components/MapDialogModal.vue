@@ -68,13 +68,13 @@
           <div class="text-subtitle1 text-weight-bold q-mb-sm">Laporan Terbaru</div>
           <div class="col overflow-auto report-dialog-list q-pr-xs">
             <q-card
-              v-for="(item, idx) in destinationList"
+              v-for="(item, idx) in filteredDestinations"
               :key="idx"
               flat
               bordered
               class="report-dialog-item q-mb-sm cursor-pointer"
-              :class="{ 'active-item': selectedDest.name === item.name }"
-              @click="selectedDest = item"
+              :class="{ 'active-item': selectedDest?.name === item.name }"
+              @click="selectedDest = item; showDestModal = true; selectedDestReports = mapReports.filter(r => r.spot_id === item.id && (r.status === 'Perlu Penanganan' || r.status === 'Kritis' || r.status === 'Perlu Perhatian' || (r.status === 'pending' && r.ai_score >= 0.4)))"
             >
               <q-card-section class="row no-wrap items-center q-pa-sm gap-sm">
                 <q-img
@@ -103,25 +103,62 @@
           >
             <div ref="dialogMapContainer" class="dialog-map full-height full-width"></div>
 
-            <q-card flat class="dialog-destination-card shadow-4">
-              <q-card-section class="q-pa-sm">
-                <div class="text-subtitle1 text-weight-bold">{{ selectedDest.name }}</div>
-                <div class="text-caption text-orange text-weight-medium">
-                  ● {{ selectedDest.status }}
-                </div>
-                <div class="text-caption text-grey-6 q-mb-xs">3 laporan terbaru</div>
-
-                <q-btn
-                  outline
-                  rounded
-                  color="primary"
-                  label="Lihat Detail"
-                  class="full-width text-weight-bold"
-                  no-caps
-                  @click="goToDetail"
+            <!-- Destination Nested Modal -->
+            <q-dialog v-model="showDestModal">
+              <q-card style="width: 320px; max-width: 90vw; border-radius: 16px;" class="q-pa-sm">
+                <q-img 
+                  :src="selectedDest?.img || 'https://picsum.photos/400/300?random=' + (selectedDest?.id || 1)" 
+                  height="160px" 
+                  fit="cover" 
+                  style="border-radius: 12px;"
+                  class="q-mb-sm"
                 />
-              </q-card-section>
-            </q-card>
+                <q-card-section class="q-pa-sm q-pt-none">
+                  <div class="text-h6 text-weight-bolder text-grey-10 q-mb-xs" style="line-height: 1.2;">
+                    {{ selectedDest?.name }}
+                  </div>
+                  <div class="row items-center q-gutter-x-sm q-mb-sm">
+                    <span 
+                      class="ref-status-dot" 
+                      :class="(selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis') ? 'bg-red' : (selectedDest?.status === 'Perlu Perhatian' ? 'bg-orange' : 'bg-green')"
+                      style="width: 12px; height: 12px; border-radius: 50%; display: inline-block;"
+                    ></span>
+                    <span class="text-weight-bold text-grey-10 text-subtitle2" style="font-size: 13px;">
+                      {{ selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis' ? 'Perlu Penanganan' : (selectedDest?.status === 'Perlu Perhatian' ? 'Perlu Perhatian' : 'Aman') }}
+                    </span>
+                  </div>
+                  <div class="text-grey-6 text-caption q-mb-sm" style="font-size: 12px;">
+                    {{ selectedDestReports.length }} laporan terbaru
+                  </div>
+                  <q-scroll-area
+                    horizontal
+                    style="height: 100px; width: 100%;"
+                    class="q-mb-sm"
+                    v-if="selectedDestReports.length > 0"
+                  >
+                    <div class="row no-wrap q-gutter-x-sm">
+                      <q-img 
+                        v-for="(report, idx) in selectedDestReports" 
+                        :key="idx"
+                        :src="'http://127.0.0.1:5000/uploads/' + report.photo_path" 
+                        style="width: 96px; height: 96px; border-radius: 8px; flex: 0 0 auto;"
+                      />
+                    </div>
+                  </q-scroll-area>
+                </q-card-section>
+                <q-card-actions align="center" class="q-px-sm q-pb-sm q-pt-none">
+                  <q-btn 
+                    outline 
+                    rounded 
+                    color="teal-8" 
+                    class="text-weight-bold full-width" 
+                    label="Lihat Detail" 
+                    @click="goToDetail"
+                    v-close-popup 
+                  />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
           </div>
         </div>
       </div>
@@ -130,8 +167,9 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -154,47 +192,125 @@ const isOpen = computed({
 const dialogSearch = ref('')
 const dialogCategory = ref('Semua')
 
-const destinationList = ref([
-  {
-    name: 'Pantai Batu Hoda',
-    status: 'Perlu Perhatian',
-    waktu: '2 jam lalu',
-    img: 'https://picsum.photos/seed/toba1/400/200',
-    coords: [2.6847, 98.8722],
-  },
-  {
-    name: 'Pantai Simanindo',
-    status: 'Perlu Perhatian',
-    waktu: '2 jam lalu',
-    img: 'https://picsum.photos/seed/toba2/400/200',
-    coords: [2.7481, 98.7456],
-  },
-  {
-    name: 'Pelabuhan Tomok',
-    status: 'Perlu Perhatian',
-    waktu: '2 jam lalu',
-    img: 'https://picsum.photos/seed/toba3/400/200',
-    coords: [2.6653, 98.8541],
-  },
-  {
-    name: 'Bukit Holbung',
-    status: 'Perlu Perhatian',
-    waktu: '2 jam lalu',
-    img: 'https://picsum.photos/seed/toba4/400/200',
-    coords: [2.5531, 98.7123],
-  },
-  {
-    name: 'Menara Pandang Tele',
-    status: 'Perlu Perhatian',
-    waktu: '2 jam lalu',
-    img: 'https://picsum.photos/seed/toba5/400/200',
-    coords: [2.5489, 98.6312],
-  },
-])
+const destinationList = ref([])
 
-const selectedDest = ref(destinationList.value[0])
+const mapReports = ref([])
+
+async function fetchDestinations() {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/spots/')
+    destinationList.value = res.data
+  } catch (error) {
+    console.error('Error fetching destinations:', error)
+  }
+  
+  try {
+    const resRep = await axios.get('http://127.0.0.1:5000/api/public/reports')
+    mapReports.value = resRep.data
+  } catch (error) {
+    console.error('Error fetching map reports:', error)
+  }
+}
+
+const filteredDestinations = computed(() => {
+  return destinationList.value.filter((d) => {
+    const matchSearch = d.name.toLowerCase().includes(dialogSearch.value.toLowerCase())
+    const matchCat = dialogCategory.value === 'Semua' || d.status === dialogCategory.value
+    return matchSearch && matchCat
+  })
+})
+
+const selectedDest = ref(null)
+const showDestModal = ref(false)
+const selectedDestReports = ref([])
 const dialogMapContainer = ref(null)
 const dialogMap = ref(null)
+const dialogMarkers = ref([])
+
+function updateDialogMarkers() {
+  if (!dialogMap.value) return
+  
+  // Clear existing markers
+  dialogMarkers.value.forEach(m => dialogMap.value.removeLayer(m))
+  dialogMarkers.value = []
+  
+  // Add new markers
+  filteredDestinations.value.forEach((item) => {
+    if (item.coords) {
+      let color = 'green'
+      let status = item.status || 'Aman'
+      if (status === 'Perlu Penanganan' || status === 'Kritis') {
+        color = 'red'
+        status = 'Perlu Penanganan'
+      } else if (status === 'Perlu Perhatian') {
+        color = 'orange'
+      }
+      
+      const hexColor = color === 'red' ? '#e53935' : color === 'orange' ? '#d97706' : '#10b981'
+      
+      const circle = L.circle(item.coords, {
+        color: hexColor,
+        fillColor: hexColor,
+        fillOpacity: 0.15,
+        weight: 1,
+        radius: 1200
+      }).addTo(dialogMap.value)
+      dialogMarkers.value.push(circle)
+
+      const customIcon = L.divIcon({
+        className: 'bg-transparent',
+        html: `<svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 0C7.16344 0 0 7.16344 0 16C0 27.2 16 48 16 48C16 48 32 27.2 32 16C32 7.16344 24.8366 0 16 0ZM16 24C11.5817 24 8 20.4183 8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16C24 20.4183 20.4183 24 16 24Z" fill="${hexColor}"/></svg>`,
+        iconSize: [32, 48],
+        iconAnchor: [16, 48],
+        tooltipAnchor: [16, -24]
+      })
+
+      const marker = L.marker(item.coords, { icon: customIcon }).addTo(dialogMap.value)
+      marker.on('click', () => {
+        selectedDest.value = item
+        selectedDestReports.value = mapReports.value.filter(r => {
+          if (r.spot_id !== item.id) return false;
+          let stat = r.status || 'pending';
+          if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return false;
+          if (stat === 'pending') {
+            return r.ai_score >= 0.4;
+          }
+          return stat === 'Perlu Penanganan' || stat === 'Kritis' || stat === 'Perlu Perhatian';
+        })
+        showDestModal.value = true
+      })
+      dialogMarkers.value.push(marker)
+    }
+  })
+
+  mapReports.value.forEach((r) => {
+    let stat = r.status || 'pending'
+    if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return
+    if (stat === 'pending' && r.ai_score < 0.4) return
+
+    let dotColor = '#10b981'
+    if (r.ai_score >= 0.7 || stat === 'Perlu Penanganan' || stat === 'Kritis') {
+      dotColor = '#e53935'
+    } else if (stat === 'Perlu Perhatian' || (stat === 'pending' && r.ai_score >= 0.4)) {
+      dotColor = '#d97706'
+    }
+    
+    const dot = L.circleMarker([r.latitude, r.longitude], {
+      radius: 4,
+      fillColor: dotColor,
+      color: '#ffffff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(dialogMap.value)
+    
+    dialogMarkers.value.push(dot)
+  })
+}
+
+watch(filteredDestinations, () => {
+  updateDialogMarkers()
+})
 
 function goToDetail() {
   isOpen.value = false
@@ -215,6 +331,7 @@ function onDialogHide() {
 }
 
 async function onDialogMapShow() {
+  await fetchDestinations()
   await nextTick()
   setTimeout(() => {
     if (!dialogMapContainer.value) return
@@ -230,13 +347,14 @@ async function onDialogMapShow() {
       }).addTo(dialogMap.value)
 
       const lakePolygon = [
-        [2.85, 98.65],
-        [2.92, 98.85],
-        [2.75, 99.05],
-        [2.45, 99.0],
-        [2.35, 98.9],
-        [2.45, 98.65],
-        [2.7, 98.58],
+        [3.05, 98.45],
+        [2.95, 98.85],
+        [2.75, 99.20],
+        [2.45, 99.25],
+        [2.25, 99.15],
+        [2.25, 98.80],
+        [2.40, 98.60],
+        [2.75, 98.50],
       ]
       L.polygon(lakePolygon, {
         color: '#e53935',
@@ -245,19 +363,7 @@ async function onDialogMapShow() {
         fillOpacity: 0.35,
       }).addTo(dialogMap.value)
 
-      destinationList.value.forEach((item) => {
-        if (item.coords) {
-          const marker = L.marker(item.coords).addTo(dialogMap.value)
-          marker.bindTooltip(item.name, {
-            permanent: true,
-            direction: 'top',
-            className: 'map-tooltip-badge',
-          })
-          marker.on('click', () => {
-            selectedDest.value = item
-          })
-        }
-      })
+      updateDialogMarkers()
     }
     dialogMap.value.invalidateSize()
     setTimeout(() => {

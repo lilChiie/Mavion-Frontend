@@ -8,6 +8,7 @@
     >
       <div class="row items-center justify-between gap-md">
         <div>
+          <q-btn flat dense icon="arrow_back" color="grey-8" class="q-mb-sm text-weight-bold" label="Kembali ke Daftar Destinasi" no-caps to="/admin/destinasi" />
           <h1 class="text-h4 text-weight-bolder text-grey-9 q-my-none">
             Input & Pemetaan Area Wisata
           </h1>
@@ -114,54 +115,27 @@
               />
             </div>
 
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-sm-6">
-                <q-label class="text-weight-bold text-grey-8">Kabupaten / Wilayah</q-label>
-                <q-select
-                  v-model="form.wilayah"
-                  :options="[
-                    'Samosir',
-                    'Toba',
-                    'Simalungun',
-                    'Karo',
-                    'Dairi',
-                    'Humbang Hasundutan',
-                    'Tapanuli Utara',
-                  ]"
-                  outlined
-                  dense
-                  color="teal-8"
-                  class="q-mt-xs bg-white"
-                  hide-bottom-space
-                />
-              </div>
 
-              <div class="col-12 col-sm-6">
-                <q-label class="text-weight-bold text-grey-8">Kategori Wisata</q-label>
-                <q-select
-                  v-model="form.kategori"
-                  :options="[
-                    'Danau & Pantai',
-                    'Perbukitan & Gunung',
-                    'Air Terjun',
-                    'Wisata Budaya',
-                    'Pelabuhan & Dermaga',
-                  ]"
-                  outlined
-                  dense
-                  color="teal-8"
-                  class="q-mt-xs bg-white"
-                  hide-bottom-space
-                />
-              </div>
+            <div class="q-my-md">
+              <q-label class="text-weight-bold text-grey-8">Deskripsi Destinasi Wisata</q-label>
+              <q-input
+                v-model="form.description"
+                placeholder="Tambahkan deskripsi mengenai area wisata ini..."
+                type="textarea"
+                outlined
+                dense
+                color="teal-8"
+                class="q-mt-xs bg-white"
+                hide-bottom-space
+              />
             </div>
 
             <div class="bg-teal-1 q-pa-md rounded-borders">
               <div
                 class="text-subtitle2 text-weight-bold text-teal-10 q-mb-xs row items-center gap-xs"
               >
-                <q-icon name="calculate" color="teal-8" />
-                Hasil Perhitungan Otomatis Sistem
+                <q-icon name="pin_drop" color="teal-8" />
+                Koordinat Lokasi (Otomatis / Manual)
               </div>
               <div class="row q-col-gutter-sm">
                 <div class="col-6">
@@ -170,7 +144,7 @@
                   >
                   <q-input
                     v-model="form.latitude"
-                    readonly
+                    @update:model-value="updateMapFromInputs"
                     outlined
                     dense
                     bg-color="white"
@@ -183,7 +157,7 @@
                   >
                   <q-input
                     v-model="form.longitude"
-                    readonly
+                    @update:model-value="updateMapFromInputs"
                     outlined
                     dense
                     bg-color="white"
@@ -206,6 +180,27 @@
               />
             </div>
 
+            <div class="q-mt-md">
+              <q-label class="text-weight-bold text-grey-8">Foto Area Wisata</q-label>
+              <q-file
+                v-model="form.image"
+                outlined
+                dense
+                color="teal-8"
+                class="q-mt-xs bg-white"
+                accept="image/*"
+                label="Pilih Foto"
+                hide-bottom-space
+              >
+                <template v-slot:prepend>
+                  <q-icon name="attach_file" />
+                </template>
+              </q-file>
+              <div class="text-caption text-grey-6 q-mt-xs" v-if="isEditing">
+                Biarkan kosong jika tidak ingin mengubah foto saat ini.
+              </div>
+            </div>
+
             <div class="row gap-md q-mt-lg">
               <q-btn
                 type="submit"
@@ -214,7 +209,7 @@
                 rounded
                 color="teal-8"
                 icon="save"
-                label="Simpan Area Wisata Baru"
+                :label="isEditing ? 'Simpan Perubahan Area Wisata' : 'Simpan Area Wisata Baru'"
                 class="full-width text-weight-bold"
                 no-caps
                 size="md"
@@ -226,6 +221,7 @@
       </Motion>
     </div>
 
+
     <StatusModal
       v-model="statusModalOpen"
       :type="modalType"
@@ -236,14 +232,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, nextTick, onBeforeUnmount, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { Motion } from 'motion-v'
+import axios from 'axios'
 import StatusModal from '../../components/StatusModal.vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const $q = useQuasar()
+const route = useRoute()
+const router = useRouter()
 const submitting = ref(false)
 const statusModalOpen = ref(false)
 const modalType = ref('success')
@@ -252,18 +252,26 @@ const modalMessage = ref('')
 
 const form = reactive({
   name: '',
-  wilayah: 'Samosir',
-  kategori: 'Danau & Pantai',
   status: 'Aman',
   description: '',
   latitude: '2.68472',
   longitude: '98.87221',
-  imageUrl: 'https://picsum.photos/seed/toba7/600/400',
+  image: null,
 })
 
 const pickerMapContainer = ref(null)
 const pickerMap = ref(null)
 const selectedMarker = ref(null)
+
+const isEditing = ref(false)
+const editId = ref(null)
+let redirectOnClose = false
+
+watch(statusModalOpen, (newVal) => {
+  if (!newVal && redirectOnClose) {
+    router.push('/admin/destinasi')
+  }
+})
 
 function initPickerMap() {
   if (!pickerMapContainer.value) return
@@ -312,6 +320,16 @@ function updateCoordinates(lat, lng) {
   })
 }
 
+function updateMapFromInputs() {
+  const lat = parseFloat(form.latitude)
+  const lng = parseFloat(form.longitude)
+
+  if (!isNaN(lat) && !isNaN(lng) && selectedMarker.value && pickerMap.value) {
+    selectedMarker.value.setLatLng([lat, lng])
+    pickerMap.value.setView([lat, lng], pickerMap.value.getZoom())
+  }
+}
+
 function getCurrentLocation() {
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
@@ -336,20 +354,70 @@ function getCurrentLocation() {
 
 function saveDestination() {
   submitting.value = true
+  const token = localStorage.getItem('admin_token')
 
-  setTimeout(() => {
+  const payload = new FormData()
+  payload.append('name', form.name)
+  payload.append('status', form.status)
+  payload.append('description', form.description)
+  payload.append('latitude', form.latitude)
+  payload.append('longitude', form.longitude)
+  if (form.image) {
+    payload.append('image', form.image)
+  }
+
+  const req = isEditing.value
+    ? axios.put(`http://127.0.0.1:5000/api/spots/${editId.value}`, payload, { headers: { Authorization: `Bearer ${token}` } })
+    : axios.post('http://127.0.0.1:5000/api/spots/', payload, { headers: { Authorization: `Bearer ${token}` } })
+
+  req
+  .then(() => {
     submitting.value = false
     modalType.value = 'success'
-    modalTitle.value = 'Destinasi Berhasil Ditambahkan!'
-    modalMessage.value = `Destinasi "${form.name}" (${form.wilayah}) tersimpan dengan koordinat ${form.latitude}, ${form.longitude}.`
+    modalTitle.value = isEditing.value ? 'Destinasi Berhasil Diperbarui!' : 'Destinasi Berhasil Ditambahkan!'
+    modalMessage.value = `Destinasi "${form.name}" tersimpan dengan koordinat ${form.latitude}, ${form.longitude}.`
     statusModalOpen.value = true
+    redirectOnClose = true
 
     form.name = ''
     form.description = ''
-  }, 1000)
+    form.image = null
+    isEditing.value = false
+    editId.value = null
+  })
+  .catch((err) => {
+    submitting.value = false
+    modalType.value = 'error'
+    modalTitle.value = 'Gagal Menambahkan Destinasi'
+    modalMessage.value = err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data.'
+    statusModalOpen.value = true
+  })
 }
 
 onMounted(async () => {
+  if (route.query.edit) {
+    const editIdParam = route.query.edit
+    try {
+      const res = await axios.get(`http://127.0.0.1:5000/api/spots/${editIdParam}`)
+      const spot = res.data
+      isEditing.value = true
+      editId.value = spot.id
+      form.name = spot.name
+      form.description = spot.description || ''
+      form.latitude = spot.latitude
+      form.longitude = spot.longitude
+      form.status = spot.status
+
+      if (selectedMarker.value) {
+        selectedMarker.value.setLatLng([spot.latitude, spot.longitude])
+        pickerMap.value?.flyTo([spot.latitude, spot.longitude], 12)
+      }
+    } catch (err) {
+      console.error(err)
+      $q.notify({ type: 'negative', message: 'Gagal memuat data destinasi' })
+    }
+  }
+
   await nextTick()
   initPickerMap()
 })

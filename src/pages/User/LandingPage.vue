@@ -78,31 +78,31 @@
             <div class="stats-grid">
               <div class="total-report">
                 <div class="stats-title">Statistik Real Time</div>
-                <div class="stats-number">90</div>
+                <div class="stats-number">{{ stats.total_reports }}</div>
                 <div class="stats-label">Laporan Masuk</div>
               </div>
 
               <div class="status-box success">
                 <q-icon name="check_circle" size="32px" />
                 <div>
-                  <div class="status-number">30</div>
-                  <div>Laporan telah ditindaklanjuti</div>
+                  <div class="status-number">{{ stats.cleaned_reports }}</div>
+                  <div>Laporan ditindaklanjuti</div>
                 </div>
               </div>
 
               <div class="status-box warning">
                 <q-icon name="warning" size="32px" />
                 <div>
-                  <div class="status-number">30</div>
-                  <div>Laporan perlu perhatian</div>
+                  <div class="status-number">{{ stats.attention_spots }}</div>
+                  <div>Titik perlu perhatian</div>
                 </div>
               </div>
 
               <div class="status-box danger">
                 <q-icon name="report_problem" size="32px" />
                 <div>
-                  <div class="status-number">30</div>
-                  <div>Laporan perlu penanganan</div>
+                  <div class="status-number">{{ stats.critical_spots }}</div>
+                  <div>Titik perlu penanganan</div>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@
         :transition="{ duration: 0.6, ease: 'easeOut' }"
       >
         <div class="row items-stretch">
-          <div class="col-12 col-md-4 q-pa-sm left-panel">
+          <div class="col-12 col-md-4 q-pa-xl left-panel column justify-center">
             <div class="text-subtitle2 text-grey-8">Peta Kondisi Wisata</div>
 
             <div class="text-h4 text-weight-bold q-mt-sm kondisi-title">
@@ -145,49 +145,67 @@
               to="/peta"
             />
 
-            <div class="row q-col-gutter-sm q-mt-md q-pa-sm legend-wrapper">
-              <div class="col-auto">
-                <div class="legend-item">
-                  <span class="dot green"></span>
-                  Aman
-                </div>
-              </div>
-
-              <div class="col-auto">
-                <div class="legend-item">
-                  <span class="dot orange"></span>
-                  Perlu Perhatian
-                </div>
-              </div>
-
-              <div class="col-auto">
-                <div class="legend-item">
-                  <span class="dot red"></span>
-                  Perlu Penanganan
-                </div>
-              </div>
-            </div>
-          </div>
+        </div>
 
           <div class="col-12 col-md-8">
             <div class="map-wrapper">
               <div ref="mapContainer" class="map"></div>
-              <q-card class="destination-card">
-                <q-card-section>
-                  <div class="text-subtitle1 text-weight-bold">Pantai Batu Hoda</div>
-                  <div class="text-caption text-orange">● Perlu Perhatian</div>
-                  <div class="text-caption text-grey">3 laporan terbaru</div>
-
-                  <q-btn
-                    class="full-width q-mt-sm"
-                    outline
-                    rounded
-                    color="primary"
-                    label="Lihat Detail"
-                    to="/destinasi-detail"
+              <!-- Destination Modal -->
+              <q-dialog v-model="showDestModal">
+                <q-card style="width: 320px; max-width: 90vw; border-radius: 16px;" class="q-pa-sm">
+                  <q-img
+                    :src="selectedDest?.img || 'https://picsum.photos/400/300?random=' + (selectedDest?.id || 1)"
+                    height="160px"
+                    fit="cover"
+                    style="border-radius: 12px;"
+                    class="q-mb-sm"
                   />
-                </q-card-section>
-              </q-card>
+                  <q-card-section class="q-pa-sm q-pt-none">
+                    <div class="text-h6 text-weight-bolder text-grey-10 q-mb-xs" style="line-height: 1.2;">
+                      {{ selectedDest?.name }}
+                    </div>
+                    <div class="row items-center q-gutter-x-sm q-mb-sm">
+                      <span
+                        class="ref-status-dot"
+                        :class="(selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis') ? 'bg-red' : (selectedDest?.status === 'Perlu Perhatian' ? 'bg-orange' : 'bg-green')"
+                        style="width: 12px; height: 12px; border-radius: 50%; display: inline-block;"
+                      ></span>
+                      <span class="text-weight-bold text-grey-10 text-subtitle2" style="font-size: 13px;">
+                        {{ selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis' ? 'Perlu Penanganan' : (selectedDest?.status === 'Perlu Perhatian' ? 'Perlu Perhatian' : 'Aman') }}
+                      </span>
+                    </div>
+                    <div class="text-grey-6 text-caption q-mb-sm" style="font-size: 12px;">
+                      {{ selectedDestReports.length }} laporan terbaru
+                    </div>
+                    <q-scroll-area
+                      horizontal
+                      style="height: 100px; width: 100%;"
+                      class="q-mb-sm"
+                      v-if="selectedDestReports.length > 0"
+                    >
+                      <div class="row no-wrap q-gutter-x-sm">
+                        <q-img
+                          v-for="(report, idx) in selectedDestReports"
+                          :key="idx"
+                          :src="'http://127.0.0.1:5000/uploads/' + report.photo_path"
+                          style="width: 96px; height: 96px; border-radius: 8px; flex: 0 0 auto;"
+                        />
+                      </div>
+                    </q-scroll-area>
+                  </q-card-section>
+                  <q-card-actions align="center" class="q-px-sm q-pb-sm q-pt-none">
+                    <q-btn
+                      outline
+                      rounded
+                      color="teal-8"
+                      class="text-weight-bold full-width"
+                      label="Lihat Detail"
+                      :to="{ path: '/destinasi-detail', query: { name: selectedDest?.name, status: selectedDest?.status } }"
+                      v-close-popup
+                    />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
           </div>
         </div>
@@ -205,14 +223,24 @@
           <div class="text-h6 text-weight-bold q-mb-lg">Cara Kerja Sistem</div>
           <div class="row justify-between items-start">
             <template v-for="(step, idx) in caraKerjaSteps" :key="step.number">
-              <div class="col text-center">
-                <q-badge rounded color="primary" :label="step.number" class="q-mb-sm" />
-                <q-avatar
-                  size="90px"
-                  :color="step.bgColor"
-                  :text-color="step.textColor"
-                  :icon="step.icon"
-                />
+              <div class="col-12 col-md text-center q-mb-md">
+                <div class="relative-position inline-block">
+                  <q-avatar
+                    size="90px"
+                    :color="step.bgColor"
+                    :text-color="step.textColor"
+                    :icon="step.icon"
+                  />
+                  <q-avatar
+                    size="32px"
+                    color="teal-8"
+                    text-color="white"
+                    class="text-weight-bold shadow-2"
+                    style="font-size: 16px; position: absolute; top: -4px; left: -16px"
+                  >
+                    {{ step.number }}
+                  </q-avatar>
+                </div>
                 <div class="text-subtitle1 text-weight-bold q-mt-md">{{ step.title }}</div>
                 <div class="text-caption q-mt-sm">
                   {{ step.desc }}
@@ -222,7 +250,7 @@
               <div
                 v-if="idx < caraKerjaSteps.length - 1"
                 :key="'arrow-' + idx"
-                class="col-auto self-center"
+                class="col-auto self-center gt-sm"
               >
                 <q-icon name="more_horiz" size="40px" color="grey-5" />
               </div>
@@ -340,6 +368,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import FooterComponent from '../../components/FooterComponent.vue'
 import MapDialogModal from '../../components/MapDialogModal.vue'
+import axios from 'axios'
 
 const mapDialogOpen = ref(false)
 const mapContainer = ref(null)
@@ -380,32 +409,7 @@ const caraKerjaSteps = [
   },
 ]
 
-const laporanTerbaru = [
-  {
-    img: 'https://picsum.photos/seed/toba1/400/200',
-    lokasi: 'Pantai Batu Hoda',
-    kategori: 'Sampah Menumpuk',
-    waktu: '2 jam lalu',
-  },
-  {
-    img: 'https://picsum.photos/seed/toba2/400/200',
-    lokasi: 'Pantai Batu Hoda',
-    kategori: 'Sampah Menumpuk',
-    waktu: '2 jam lalu',
-  },
-  {
-    img: 'https://picsum.photos/seed/toba3/400/200',
-    lokasi: 'Pantai Batu Hoda',
-    kategori: 'Sampah Menumpuk',
-    waktu: '2 jam lalu',
-  },
-  {
-    img: 'https://picsum.photos/seed/toba4/400/200',
-    lokasi: 'Pantai Simanindo',
-    kategori: 'Limbah Cair',
-    waktu: '5 jam lalu',
-  },
-]
+
 
 const tipsMelaporkan = [
   { icon: 'photo_camera', color: 'teal-7', text: 'Ambil foto yang jelas.' },
@@ -415,23 +419,17 @@ const tipsMelaporkan = [
 ]
 
 const lakePolygonCoordinates = [
-  [2.85, 98.65],
-  [2.92, 98.85],
-  [2.75, 99.05],
-  [2.45, 99.0],
-  [2.35, 98.9],
-  [2.45, 98.65],
-  [2.7, 98.58],
+  [3.05, 98.45],
+  [2.95, 98.85],
+  [2.75, 99.20],
+  [2.45, 99.25],
+  [2.25, 99.15],
+  [2.25, 98.80],
+  [2.40, 98.60],
+  [2.75, 98.50],
 ]
 
-const destinationMarkers = [
-  { name: 'Pantai Batu Hoda', coords: [2.6847, 98.8722] },
-  { name: 'Pantai Simanindo', coords: [2.7481, 98.7456] },
-  { name: 'Pelabuhan Tomok', coords: [2.6653, 98.8541] },
-  { name: 'Bukit Holbung', coords: [2.5531, 98.7123] },
-  { name: 'Menara Pandang Tele', coords: [2.5489, 98.6312] },
-  { name: 'Desa Wisata Tomok', coords: [2.658, 98.8612] },
-]
+const destinationMarkers = ref([])
 
 function resizeMap() {
   map.value?.invalidateSize()
@@ -457,13 +455,78 @@ function initMap() {
     fillOpacity: 0.35,
   }).addTo(map.value)
 
-  destinationMarkers.forEach((d) => {
-    const marker = L.marker(d.coords).addTo(map.value)
-    marker.bindTooltip(d.name, {
-      permanent: true,
-      direction: 'top',
-      className: 'map-tooltip-badge',
+  destinationMarkers.value.forEach((d) => {
+    let color = 'green'
+    let status = d.status || 'Aman'
+    if (status === 'Perlu Penanganan' || status === 'Kritis') {
+      color = 'red'
+      status = 'Perlu Penanganan'
+    } else if (status === 'Perlu Perhatian') {
+      color = 'orange'
+    }
+
+    const hexColor = color === 'red' ? '#e53935' : color === 'orange' ? '#d97706' : '#10b981'
+
+    L.circle([d.latitude, d.longitude], {
+      color: hexColor,
+      fillColor: hexColor,
+      fillOpacity: 0.15,
+      weight: 1,
+      radius: 1200
+    }).addTo(map.value)
+
+    const customIcon = L.divIcon({
+      className: 'bg-transparent',
+      html: `<svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 0C7.16344 0 0 7.16344 0 16C0 27.2 16 48 16 48C16 48 32 27.2 32 16C32 7.16344 24.8366 0 16 0ZM16 24C11.5817 24 8 20.4183 8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16C24 20.4183 20.4183 24 16 24Z" fill="${hexColor}"/></svg>`,
+      iconSize: [32, 48],
+      iconAnchor: [16, 48],
+      tooltipAnchor: [16, -24]
     })
+
+    const marker = L.marker([d.latitude, d.longitude], { icon: customIcon }).addTo(map.value)
+
+    const badgeClass = color === 'red' ? 'badge-red' : color === 'orange' ? 'badge-orange' : 'badge-green'
+    marker.bindTooltip(`<div class="${badgeClass}">${status} - ${d.name}</div>`, {
+      permanent: true,
+      direction: 'right',
+      className: 'ref-map-badge-tooltip'
+    })
+
+    marker.on('click', () => {
+      selectedDest.value = d
+      selectedDestReports.value = mapReports.value.filter(r => {
+        if (r.spot_id !== d.id) return false;
+        let stat = r.status || 'pending';
+        if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return false;
+        if (stat === 'pending') {
+          return r.ai_score >= 0.4;
+        }
+        return stat === 'Perlu Penanganan' || stat === 'Kritis' || stat === 'Perlu Perhatian';
+      })
+      showDestModal.value = true
+    })
+  })
+
+  mapReports.value.forEach((r) => {
+    let stat = r.status || 'pending'
+    if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return
+    if (stat === 'pending' && r.ai_score < 0.4) return
+
+    let dotColor = '#10b981'
+    if (r.ai_score >= 0.7 || stat === 'Perlu Penanganan' || stat === 'Kritis') {
+      dotColor = '#e53935'
+    } else if (stat === 'Perlu Perhatian' || (stat === 'pending' && r.ai_score >= 0.4)) {
+      dotColor = '#d97706'
+    }
+
+    L.circleMarker([r.latitude, r.longitude], {
+      radius: 4,
+      fillColor: dotColor,
+      color: '#ffffff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(map.value)
   })
 
   setTimeout(() => {
@@ -473,7 +536,45 @@ function initMap() {
   window.addEventListener('resize', resizeMap)
 }
 
+const stats = ref({
+  total_reports: 0,
+  cleaned_reports: 0,
+  attention_spots: 0,
+  critical_spots: 0
+})
+
+const laporanTerbaru = ref([])
+const destinasiPopuler = ref([])
+const showDestModal = ref(false)
+const selectedDest = ref(null)
+const selectedDestReports = ref([])
+const mapReports = ref([])
+
+
 onMounted(async () => {
+  try {
+    const res = await axios.get('http://127.0.0.1:5000/api/public/landing')
+    stats.value = res.data.stats
+    laporanTerbaru.value = res.data.recent_reports
+    destinasiPopuler.value = res.data.popular_destinations
+  } catch (error) {
+    console.error('Failed fetching landing data:', error)
+  }
+
+  try {
+    const resSpots = await axios.get('http://127.0.0.1:5000/api/spots/')
+    destinationMarkers.value = resSpots.data
+  } catch (error) {
+    console.error('Failed fetching map spots:', error)
+  }
+
+  try {
+    const resRep = await axios.get('http://127.0.0.1:5000/api/public/reports')
+    mapReports.value = resRep.data
+  } catch (error) {
+    console.error('Failed fetching map reports:', error)
+  }
+
   await nextTick()
   initMap()
 })
@@ -488,6 +589,45 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+:deep(.ref-map-badge-tooltip) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+:deep(.badge-red) {
+  background: #ffffff;
+  color: #e53935;
+  border: 1px solid #ffcdd2;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 3px 10px;
+  box-shadow: 0 2px 8px rgba(229, 57, 53, 0.18);
+}
+
+:deep(.badge-orange) {
+  background: #ffffff;
+  color: #d97706;
+  border: 1px solid #fef3c7;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 3px 10px;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.18);
+}
+
+:deep(.badge-green) {
+  background: #ffffff;
+  color: #10b981;
+  border: 1px solid #d1fae5;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 3px 10px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+}
+
 .map-section {
   background: white;
   border-radius: 22px;
@@ -858,14 +998,62 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1024px) {
+  .hero-section {
+    padding: 25px 20px 60px;
+    min-height: auto;
+  }
+  .hero-right {
+    display: none;
+  }
   .hero-content {
     grid-template-columns: 1fr;
-    gap: 24px;
+    text-align: center;
+    gap: 30px;
   }
-
   .hero-left h1,
   .hero-subtitle {
-    font-size: 44px;
+    font-size: 42px;
+  }
+  .hero-left p {
+    margin: 16px auto;
+  }
+  .hero-action {
+    justify-content: center;
+  }
+  .stats-wrapper {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-top: 40px;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .map-section {
+    margin: 40px 20px 10px;
+    padding: 20px 10px;
+  }
+  .section-cara-kerja, .section-laporan {
+    margin: 10px 20px 10px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .cta-section {
+    margin: 0 20px 32px;
+  }
+  .map-wrapper {
+    height: 350px;
+  }
+  .destination-card {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    margin-top: 10px;
   }
 }
 
@@ -891,7 +1079,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .hero-section {
-    padding: 24px 20px 510px;
+    padding: 24px 20px 40px;
   }
 
   .hero-overlay {
@@ -934,9 +1122,9 @@ onBeforeUnmount(() => {
   }
 
   .stats-wrapper {
-    bottom: -460px;
     padding-left: 16px;
     padding-right: 16px;
+    margin-top: 20px;
   }
 
   .stats-grid {
@@ -963,7 +1151,7 @@ onBeforeUnmount(() => {
   }
 
   .map-section {
-    margin: 480px 12px 10px;
+    margin: 40px 12px 10px;
     padding: 20px 12px;
     border-radius: 16px;
   }
@@ -1011,7 +1199,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 480px) {
   .hero-section {
-    padding: 20px 16px 560px;
+    padding: 20px 16px 40px;
   }
 
   .hero-left h1 {
@@ -1027,9 +1215,9 @@ onBeforeUnmount(() => {
   }
 
   .stats-wrapper {
-    bottom: -510px;
     padding-left: 12px;
     padding-right: 12px;
+    margin-top: 20px;
   }
 
   .stats-card {
@@ -1049,7 +1237,7 @@ onBeforeUnmount(() => {
   }
 
   .map-section {
-    margin: 530px 8px 10px;
+    margin: 40px 8px 10px;
     padding: 14px 8px;
   }
 

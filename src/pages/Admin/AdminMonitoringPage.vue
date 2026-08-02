@@ -16,7 +16,7 @@
           </div>
         </div>
 
-        <q-btn
+        <q-btn-dropdown
           unelevated
           rounded
           color="teal-8"
@@ -24,8 +24,27 @@
           label="Ekspor Laporan"
           no-caps
           class="text-weight-bold q-px-md"
-          @click="exportReport"
-        />
+        >
+          <q-list>
+            <q-item clickable v-close-popup @click="exportReport('pdf')">
+              <q-item-section avatar>
+                <q-icon name="picture_as_pdf" color="red-8" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Ekspor sebagai PDF</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item clickable v-close-popup @click="exportReport('csv')">
+              <q-item-section avatar>
+                <q-icon name="table_view" color="green-8" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Ekspor sebagai CSV</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </div>
     </Motion>
 
@@ -36,8 +55,8 @@
       class="q-mb-lg"
     >
       <q-card flat bordered class="q-pa-md filter-card rounded-borders-lg">
-        <div class="row items-center justify-between gap-md">
-          <div class="col-12 col-md-5">
+        <div class="row items-center q-gutter-x-md flex-nowrap">
+          <div class="col">
             <q-input
               v-model="searchQuery"
               placeholder="Cari lokasi, ID laporan, atau jenis sampah..."
@@ -52,11 +71,11 @@
             </q-input>
           </div>
 
-          <div class="col-12 col-md-7 row items-center justify-end gap-sm q-gutter-x-md">
+          <div class="col-auto row items-center justify-end gap-sm q-gutter-x-md">
             <q-select
-              v-model="selectedWilayah"
-              :options="wilayahOptions"
-              :label="selectedWilayah ? undefined : 'Wilayah Kabupaten'"
+              v-model="selectedArea"
+              :options="areaOptions"
+              :label="selectedArea ? undefined : 'Pilih Area Wisata'"
               dense
               outlined
               rounded
@@ -67,7 +86,7 @@
 
             <q-select
               v-model="selectedStatus"
-              :options="['Semua Status', 'Perlu Penanganan', 'Perlu Perhatian', 'Selesai']"
+              :options="['Semua Status', 'Perlu Penanganan', 'Perlu Perhatian', 'Aman']"
               :label="selectedStatus ? undefined : 'Status Laporan'"
               dense
               outlined
@@ -76,49 +95,12 @@
               class="bg-white"
               style="min-width: 170px"
             />
-
-            <q-btn flat round color="grey-7" icon="refresh" @click="resetFilters">
-              <q-tooltip>Reset Filter</q-tooltip>
-            </q-btn>
           </div>
         </div>
       </q-card>
     </Motion>
 
-    <Motion
-      :initial="{ opacity: 0, y: 20 }"
-      :animate="{ opacity: 1, y: 0 }"
-      :transition="{ duration: 0.5, delay: 0.15, ease: 'easeOut' }"
-      class="q-mb-lg"
-    >
-      <div class="row items-stretch q-col-gutter-sm">
-        <div v-for="(w, idx) in wilayahStats" :key="idx" class="col-12 col-sm-6 col-md-3">
-          <q-card
-            flat
-            bordered
-            class="wilayah-stat-card q-pa-md cursor-pointer full-height"
-            :class="{ active: selectedWilayah === w.name }"
-            @click="selectedWilayah = w.name"
-          >
-            <div class="row items-center justify-between">
-              <div>
-                <div class="text-subtitle2 text-weight-bold text-grey-9">{{ w.name }}</div>
-                <div class="text-caption text-grey-6">{{ w.total }} Laporan</div>
-              </div>
 
-              <q-chip
-                dense
-                size="11px"
-                class="text-weight-bold"
-                :class="w.urgentCount > 0 ? 'bg-red-1 text-red-9' : 'bg-teal-1 text-teal-9'"
-              >
-                {{ w.urgentCount }} Perlu Penanganan
-              </q-chip>
-            </div>
-          </q-card>
-        </div>
-      </div>
-    </Motion>
 
     <Motion
       :initial="{ opacity: 0, y: 20 }"
@@ -129,10 +111,20 @@
         <div class="row items-center justify-between q-mb-md">
           <div class="text-h6 text-weight-bold text-grey-9">
             Daftar Laporan
-            <q-badge color="teal-8" class="q-ml-xs">{{ filteredReports.length }} Laporan</q-badge>
           </div>
 
-          <div class="row items-center gap-xs">
+          <div class="row items-center gap-sm">
+            <q-btn
+              v-if="selectedReports.length > 0 || selectedArea !== 'Semua Area Wisata'"
+              unelevated
+              rounded
+              color="teal-8"
+              :label="selectedReports.length > 0 ? `Update Status (${selectedReports.length})` : 'Update Status'"
+              no-caps
+              dense
+              class="q-px-md text-weight-bold"
+              @click="selectedReports.length > 0 ? openBatchActionModal() : openAreaActionModal()"
+            />
             <q-btn-toggle
               v-model="viewMode"
               flat
@@ -156,6 +148,8 @@
           :grid="viewMode === 'grid'"
           v-model:pagination="pagination"
           :rows-per-page-options="[5, 10, 20]"
+          selection="multiple"
+          v-model:selected="selectedReports"
           class="monitoring-q-table"
         >
           <template #body-cell-id="props">
@@ -202,11 +196,11 @@
             <q-td :props="props">
               <q-chip
                 dense
-                class="text-weight-bold"
-                size="sm"
+                class="text-weight-medium"
+                size="md"
                 :class="getStatusChipClass(props.row.status)"
               >
-                ● {{ props.row.status }}
+                 {{ props.row.status }}
               </q-chip>
             </q-td>
           </template>
@@ -251,6 +245,13 @@
                 <div>
                   <div class="relative-position">
                     <q-img :src="props.row.img" height="160px" fit="cover" />
+                    <q-checkbox
+                      v-model="props.selected"
+                      color="teal-8"
+                      class="absolute-top-left q-ma-sm bg-white rounded-borders"
+                      style="z-index: 10; padding: 2px;"
+                      dense
+                    />
                     <q-chip
                       dense
                       class="absolute-top-right q-ma-sm text-weight-bold"
@@ -329,6 +330,18 @@
           class="rounded-borders q-mb-md shadow-1"
         />
 
+        <div class="bg-grey-2 q-pa-md rounded-borders q-mb-md" v-if="activeReport.userNotes && activeReport.userNotes !== 'null'">
+          <div class="row items-center gap-xs q-mb-xs">
+            <q-icon name="person" color="grey-8" size="20px" />
+            <div class="text-subtitle2 text-weight-bold text-grey-9">
+              Catatan Pelapor
+            </div>
+          </div>
+          <div class="text-caption text-grey-8 font-italic">
+            "{{ activeReport.userNotes }}"
+          </div>
+        </div>
+
         <div class="bg-teal-1 q-pa-md rounded-borders q-mb-md">
           <div class="row items-center gap-xs q-mb-xs">
             <q-icon name="memory" color="teal-9" size="20px" />
@@ -337,8 +350,7 @@
             </div>
           </div>
           <div class="text-caption text-teal-9">
-            Tingkat Akurasi AI: <b>{{ activeReport.aiConfidence }}</b> | Kategori:
-            <b>{{ activeReport.trashType }}</b>
+            Tingkat Akurasi AI: <b>{{ activeReport.aiConfidence }}</b>
           </div>
           <div class="text-caption text-teal-9 q-mt-xs">
             Estimasi Keparahan: <b>{{ activeReport.severity }}</b>
@@ -386,10 +398,15 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Motion } from 'motion-v'
 import StatusModal from '../../components/StatusModal.vue'
 import ReportActionModal from '../../components/ReportActionModal.vue'
+import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
+import axios from 'axios'
+
+const API_BASE_URL = 'http://127.0.0.1:5000'
 
 const statusModalOpen = ref(false)
 const confirmModalOpen = ref(false)
@@ -399,7 +416,7 @@ const modalTitle = ref('')
 const modalMessage = ref('')
 
 const searchQuery = ref('')
-const selectedWilayah = ref('Semua Wilayah')
+const selectedArea = ref('Semua Area Wisata')
 const selectedStatus = ref('Semua Status')
 const viewMode = ref('table')
 
@@ -408,82 +425,74 @@ const actionModalOpen = ref(false)
 const activeReport = ref(null)
 const actionStatus = ref('')
 const actionNotes = ref('')
+const reports = ref([])
+const selectedReports = ref([])
+const batchMode = ref(false)
+const batchType = ref('')
 
-const wilayahOptions = [
-  'Semua Wilayah',
-  'Samosir',
-  'Toba',
-  'Simalungun',
-  'Karo',
-  'Dairi',
-  'Humbang Hasundutan',
-  'Tapanuli Utara',
-]
+const areaOptions = computed(() => {
+  const areas = new Set(reports.value.map(r => r.location).filter(Boolean))
+  return ['Semua Area Wisata', ...Array.from(areas).sort()]
+})
 
-const wilayahStats = ref([
-  { name: 'Samosir', total: 42, urgentCount: 12 },
-  { name: 'Toba', total: 24, urgentCount: 5 },
-  { name: 'Simalungun', total: 18, urgentCount: 3 },
-  { name: 'Karo', total: 10, urgentCount: 0 },
-])
+onMounted(async () => {
+  await fetchReports()
+})
 
-const reports = ref([
-  {
-    id: '#RPT-2026-089',
-    location: 'Pantai Batu Hoda',
-    wilayah: 'Samosir',
-    img: 'https://picsum.photos/seed/toba1/300/200',
-    aiConfidence: '96.8%',
-    trashType: 'Tumpukan Botol Plastik & Anorganik',
-    severity: 'Tinggi (Tumpukan > 2m²)',
-    timeAgo: '15 menit lalu',
-    status: 'Perlu Penanganan',
-  },
-  {
-    id: '#RPT-2026-088',
-    location: 'Area Dermaga Tomok',
-    wilayah: 'Samosir',
-    img: 'https://picsum.photos/seed/toba2/300/200',
-    aiConfidence: '94.2%',
-    trashType: 'Sampah Kemasan Makanan',
-    severity: 'Sedang',
-    timeAgo: '45 menit lalu',
-    status: 'Perlu Perhatian',
-  },
-  {
-    id: '#RPT-2026-087',
-    location: 'Pelabuhan Ajibata',
-    wilayah: 'Toba',
-    img: 'https://picsum.photos/seed/toba3/300/200',
-    aiConfidence: '98.1%',
-    trashType: 'Limbah Plastik Ringan',
-    severity: 'Rendah (Telah dibersihkan)',
-    timeAgo: '2 jam lalu',
-    status: 'Selesai',
-  },
-  {
-    id: '#RPT-2026-086',
-    location: 'Bukit Holbung',
-    wilayah: 'Samosir',
-    img: 'https://picsum.photos/seed/toba4/300/200',
-    aiConfidence: '91.5%',
-    trashType: 'Sisa Pembungkus',
-    severity: 'Rendah',
-    timeAgo: '4 jam lalu',
-    status: 'Selesai',
-  },
-  {
-    id: '#RPT-2026-085',
-    location: 'Pantai Simanindo',
-    wilayah: 'Samosir',
-    img: 'https://picsum.photos/seed/toba5/300/200',
-    aiConfidence: '95.0%',
-    trashType: 'Sampah Organik & Plastik',
-    severity: 'Sedang',
-    timeAgo: '5 jam lalu',
-    status: 'Perlu Perhatian',
-  },
-])
+const mapBackendStatus = (status, score) => {
+  if (status === 'pending') {
+    if (score >= 0.7) return 'Perlu Penanganan'
+    if (score >= 0.4) return 'Perlu Perhatian'
+    return 'Aman'
+  }
+  if (status === 'cleaned') return 'Selesai'
+  if (status === 'Perlu Penanganan') return 'Perlu Penanganan'
+  if (status === 'Perlu Perhatian') return 'Perlu Perhatian'
+  if (status === 'Selesai') return 'Selesai'
+  return status || 'Perlu Penanganan'
+}
+
+const getSeverityLabel = (score) => {
+  if (score >= 0.7) return 'Tinggi (Tumpukan Besar)'
+  if (score >= 0.3) return 'Sedang'
+  return 'Rendah'
+}
+
+const getTimeAgo = (dateStr) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffInMinutes = Math.floor((now - date) / 1000 / 60)
+
+  if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} jam lalu`
+  const diffInDays = Math.floor(diffInHours / 24)
+  return `${diffInDays} hari lalu`
+}
+
+const fetchReports = async () => {
+  try {
+    const token = localStorage.getItem('admin_token')
+    const response = await axios.get(`${API_BASE_URL}/api/reports/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+
+    reports.value = response.data.map(r => ({
+      id: `#RPT-${r.id.toString().padStart(4, '0')}`,
+      backendId: r.id,
+      location: r.spot_name || 'Lokasi Tidak Diketahui',
+      img: `${API_BASE_URL}/uploads/${r.photo_path}`,
+      aiConfidence: r.ai_score ? `${Math.round(r.ai_score * 100)}%` : 'N/A',
+      severity: getSeverityLabel(r.ai_score || 0.1),
+      timeAgo: getTimeAgo(r.created_at),
+      date: new Date(r.created_at).toLocaleString('id-ID'),
+      status: mapBackendStatus(r.status, r.ai_score || 0),
+      userNotes: r.user_notes
+    }))
+  } catch (error) {
+    console.error('Error fetching reports:', error)
+  }
+}
 
 const filteredReports = computed(() => {
   return reports.value.filter((r) => {
@@ -492,12 +501,12 @@ const filteredReports = computed(() => {
       r.id.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       r.trashType.toLowerCase().includes(searchQuery.value.toLowerCase())
 
-    const matchWilayah =
-      selectedWilayah.value === 'Semua Wilayah' || r.wilayah === selectedWilayah.value
+    const matchArea =
+      selectedArea.value === 'Semua Area Wisata' || r.location === selectedArea.value
 
     const matchStatus = selectedStatus.value === 'Semua Status' || r.status === selectedStatus.value
 
-    return matchSearch && matchWilayah && matchStatus
+    return matchSearch && matchArea && matchStatus
   })
 })
 
@@ -517,20 +526,15 @@ const pagination = ref({
   rowsPerPage: 5,
 })
 
-watch([searchQuery, selectedWilayah, selectedStatus], () => {
+watch([searchQuery, selectedArea, selectedStatus], () => {
   pagination.value.page = 1
 })
 
 function getStatusChipClass(status) {
   if (status === 'Selesai') return 'bg-teal-1 text-teal-9'
   if (status === 'Perlu Perhatian') return 'bg-orange-1 text-orange-9'
+  if (status === 'Aman') return 'bg-green-1 text-green-9'
   return 'bg-red-1 text-red-9'
-}
-
-function resetFilters() {
-  searchQuery.value = ''
-  selectedWilayah.value = 'Semua Wilayah'
-  selectedStatus.value = 'Semua Status'
 }
 
 function previewImage(report) {
@@ -547,7 +551,34 @@ function handleProcessFromDetail(report) {
   openActionModal(report)
 }
 
+function openBatchActionModal() {
+  batchMode.value = true
+  batchType.value = 'selected'
+  activeReport.value = {
+    isBatch: true,
+    batchText: `${selectedReports.value.length} laporan yang dipilih`,
+    status: 'Perlu Penanganan'
+  }
+  actionStatus.value = 'Perlu Penanganan'
+  actionNotes.value = ''
+  actionModalOpen.value = true
+}
+
+function openAreaActionModal() {
+  batchMode.value = true
+  batchType.value = 'area'
+  activeReport.value = {
+    isBatch: true,
+    batchText: `seluruh laporan di area ${selectedArea.value}`,
+    status: 'Perlu Penanganan'
+  }
+  actionStatus.value = 'Perlu Penanganan'
+  actionNotes.value = ''
+  actionModalOpen.value = true
+}
+
 function openActionModal(report) {
+  batchMode.value = false
   activeReport.value = report
   actionStatus.value = report.status
   actionNotes.value = ''
@@ -564,34 +595,159 @@ function requestSaveActionUpdate() {
   if (activeReport.value) {
     modalType.value = 'confirm'
     modalTitle.value = 'Apakah Anda Yakin?'
-    modalMessage.value = `Apakah Anda yakin ingin memperbarui status laporan ${activeReport.value.id} di kawasan ${activeReport.value.location} menjadi "${actionStatus.value}"?`
+    if (activeReport.value.isBatch) {
+      modalMessage.value = `Apakah Anda yakin ingin memperbarui status untuk ${activeReport.value.batchText} menjadi "${actionStatus.value}"?`
+    } else {
+      modalMessage.value = `Apakah Anda yakin ingin memperbarui status laporan ${activeReport.value.id} di kawasan ${activeReport.value.location} menjadi "${actionStatus.value}"?`
+    }
     autoCloseTime.value = 0
     confirmModalOpen.value = true
   }
 }
 
-function executeSaveActionUpdate() {
+async function executeSaveActionUpdate() {
   confirmModalOpen.value = false
   if (activeReport.value) {
-    activeReport.value.status = actionStatus.value
+    if (activeReport.value.isBatch) {
+      await executeBatchUpdate()
+      return
+    }
+
+    const token = localStorage.getItem('admin_token')
+
+    try {
+      await axios.patch(`${API_BASE_URL}/api/reports/${activeReport.value.backendId}/status`, {
+        status: actionStatus.value,
+        notes: actionNotes.value
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      activeReport.value.status = actionStatus.value
+      actionModalOpen.value = false
+
+      setTimeout(() => {
+        modalType.value = 'success'
+        modalTitle.value = 'Status Berhasil Diperbarui!'
+        modalMessage.value = `Status laporan ${activeReport.value.id} di kawasan ${activeReport.value.location} telah diperbarui menjadi "${actionStatus.value}". Pop-up ini akan tertutup otomatis dalam 5 detik.`
+        autoCloseTime.value = 5000
+        statusModalOpen.value = true
+      }, 200)
+    } catch (error) {
+      console.error('Error updating status:', error)
+      alert('Gagal memperbarui status laporan')
+    }
+  }
+}
+
+async function executeBatchUpdate() {
+  const token = localStorage.getItem('admin_token')
+  let targetReports = []
+
+  if (batchType.value === 'selected') {
+    targetReports = selectedReports.value
+  } else if (batchType.value === 'area') {
+    targetReports = reports.value.filter(r => r.location === selectedArea.value)
+  }
+
+  try {
+    await Promise.all(
+      targetReports.map(report =>
+        axios.patch(`${API_BASE_URL}/api/reports/${report.backendId}/status`, {
+          status: actionStatus.value,
+          notes: actionNotes.value
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      )
+    )
+
+    targetReports.forEach(report => {
+      report.status = actionStatus.value
+    })
+
+    selectedReports.value = []
     actionModalOpen.value = false
 
     setTimeout(() => {
       modalType.value = 'success'
       modalTitle.value = 'Status Berhasil Diperbarui!'
-      modalMessage.value = `Status laporan ${activeReport.value.id} di kawasan ${activeReport.value.location} telah diperbarui menjadi "${actionStatus.value}". Pop-up ini akan tertutup otomatis dalam 5 detik.`
+      modalMessage.value = `Status untuk ${activeReport.value.batchText} telah diperbarui menjadi "${actionStatus.value}".`
       autoCloseTime.value = 5000
       statusModalOpen.value = true
     }, 200)
+  } catch (error) {
+    console.error('Error in batch update:', error)
+    alert('Gagal memperbarui status beberapa laporan')
   }
 }
 
-function exportReport() {
-  modalType.value = 'info'
-  modalTitle.value = 'Mengunduh Laporan Rekap'
-  modalMessage.value =
-    'Berkas rekapitulasi laporan PDF/CSV sedang diproses dan diunduh ke perangkat Anda.'
-  autoCloseTime.value = 5000
+function exportReport(format) {
+  if (filteredReports.value.length === 0) {
+    alert('Tidak ada data laporan untuk diekspor sesuai filter saat ini.')
+    return
+  }
+
+  if (format === 'csv') {
+    const headers = ['ID Laporan', 'Foto Lokasi', 'Analisis AI', 'Waktu', 'Status']
+    const csvRows = [headers.join(';')]
+
+    filteredReports.value.forEach(r => {
+      const row = [
+        `"${r.id}"`,
+        `"${r.img}"`,
+        `"${r.aiConfidence}"`,
+        `"${r.date}"`,
+        `"${r.status}"`
+      ]
+      csvRows.push(row.join(';'))
+    })
+
+    // Use \\r\\n for Windows Excel compatibility
+    const csvString = csvRows.join('\\r\\n')
+    // Add BOM (\\uFEFF) for UTF-8 to fix Excel displaying garbled characters
+    const blob = new Blob(["\\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `Rekap_Laporan_Sampah_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    showSuccessModal('CSV')
+  } else if (format === 'pdf') {
+    const doc = new jsPDF('landscape')
+    doc.text('Rekapitulasi Laporan Sampah - Mahorbasa', 14, 15)
+
+    const tableData = filteredReports.value.map(r => [
+      r.id,
+      r.img,
+      r.aiConfidence,
+      r.date,
+      r.status
+    ])
+
+    doc.autoTable({
+      startY: 20,
+      head: [['ID Laporan', 'Foto Lokasi', 'Analisis AI', 'Waktu', 'Status']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [15, 118, 110] }, // teal-8
+      styles: { fontSize: 9 }
+    })
+
+    doc.save(`Rekap_Laporan_Sampah_${new Date().toISOString().split('T')[0]}.pdf`)
+    showSuccessModal('PDF')
+  }
+}
+
+function showSuccessModal(format) {
+  modalType.value = 'success'
+  modalTitle.value = 'Ekspor Berhasil'
+  modalMessage.value = `Berkas rekapitulasi laporan berformat ${format} telah berhasil diunduh ke perangkat Anda.`
+  autoCloseTime.value = 3000
   statusModalOpen.value = true
 }
 </script>

@@ -9,10 +9,7 @@
         :animate="{ opacity: 1, y: 0 }"
         :transition="{ duration: 0.6, ease: 'easeOut' }"
       >
-        <div class="max-width-container relative-position z-top text-center q-py-lg">
-          <q-chip class="bg-teal-8 text-white text-weight-bold q-px-md q-mb-md">
-            Platform AI Pemantauan Wisata
-          </q-chip>
+        <div class="max-width-container relative-position text-center q-py-lg" style="z-index: 2;">
           <h1 class="text-h3 text-weight-bolder q-my-none">Tentang Mahorbasa Vision</h1>
           <p class="text-subtitle1 text-grey-4 q-mt-md max-width-sub">
             Inovasi teknologi Computer Vision dan AI yang dirancang khusus untuk memantau,

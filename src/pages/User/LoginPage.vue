@@ -1,22 +1,12 @@
 <template>
   <div class="login-container font-instrument">
     <div class="row no-wrap full-height full-width items-stretch">
-      <div class="col-12 col-md-7 left-panel q-pa-xl relative-position gt-xs">
+      <div class="col-12 col-md-7 left-panel q-py-xl q-pr-xl q-pl-md relative-position gt-xs">
         <div class="absolute-full panel-bg" :style="{ backgroundImage: `url(${loginBg})` }"></div>
         <div class="absolute-full panel-overlay"></div>
         <div
-          class="relative-position full-height flex flex-column justify-between items-start text-white"
+          class="relative-position full-height flex flex-column justify-center items-start text-white"
         >
-          <Motion
-            :initial="{ opacity: 0, x: -30 }"
-            :animate="{ opacity: 1, x: 0 }"
-            :transition="{ duration: 0.8, ease: 'easeOut' }"
-          >
-            <div class="logo-wrapper q-mb-xl">
-              <q-img :src="logo" width="110px" fit="contain" style="border-radius: 20px" />
-            </div>
-          </Motion>
-
           <div class="q-my-auto">
             <Motion
               :initial="{ opacity: 0, y: 30 }"
@@ -52,11 +42,8 @@
           class="width-100 max-width-form"
         >
           <q-card flat class="login-card q-pa-lg q-pa-sm-xl bg-white-glass">
-            <div class="text-center lt-sm q-mb-lg">
-              <q-img :src="logo" width="100px" fit="contain" />
-            </div>
-
-            <div class="q-mb-lg">
+            <div class="q-mb-lg text-center">
+              <q-img :src="logo" width="80px" fit="contain" style="border-radius: 16px" class="q-mx-auto q-mb-sm" />
               <h2
                 class="text-h4 text-weight-bold text-grey-9 q-mt-none q-mb-xs font-instrument-bold"
               >

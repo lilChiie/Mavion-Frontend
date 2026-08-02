@@ -36,9 +36,6 @@
       <q-card flat bordered class="ref-card q-pa-md">
         <div class="row items-center justify-between q-mb-sm">
           <div class="text-h6 text-weight-bold text-grey-9">Real-time Map</div>
-          <q-chip dense class="bg-teal-1 text-teal-9 text-weight-bold" style="font-size: 11px">
-            📍 6 Wilayah Aktif Danau Toba
-          </q-chip>
         </div>
         <div class="ref-map-wrapper relative-position overflow-hidden rounded-borders-lg">
           <div ref="adminMapContainer" class="admin-map"></div>
@@ -62,8 +59,9 @@
                     <div class="text-subtitle1 text-weight-bold text-grey-9">
                       Tren Laporan Masuk
                     </div>
-                    <div class="text-caption text-blue-8 text-weight-bold">
-                      <q-icon name="trending_up" color="blue-8" /> +14% Tren Meningkat
+                    <div class="text-caption text-weight-bold" :class="trendPercentage >= 0 ? 'text-blue-8' : 'text-red-8'">
+                      <q-icon :name="trendPercentage >= 0 ? 'trending_up' : 'trending_down'" :color="trendPercentage >= 0 ? 'blue-8' : 'red-8'" />
+                      {{ trendPercentage >= 0 ? '+' : '' }}{{ trendPercentage }}% Tren {{ trendPercentage >= 0 ? 'Meningkat' : 'Menurun' }}
                     </div>
                   </div>
                   <div class="text-caption text-grey-6">Fluktuasi volume laporan kebersihan</div>
@@ -99,31 +97,7 @@
               </div>
             </div>
 
-            <div class="row items-center justify-between border-top q-pt-xs q-mt-xs">
-              <div class="row items-center gap-xs">
-                <q-chip
-                  dense
-                  class="bg-teal-1 text-teal-9 text-weight-bold"
-                  style="font-size: 12px"
-                >
-                  ● Dermaga Tomok (42)
-                </q-chip>
-                <q-chip
-                  dense
-                  class="bg-teal-1 text-teal-9 text-weight-bold"
-                  style="font-size: 12px"
-                >
-                  ● Pantai Batu Hoda (24)
-                </q-chip>
-                <q-chip
-                  dense
-                  class="bg-teal-1 text-teal-9 text-weight-bold"
-                  style="font-size: 12px"
-                >
-                  ● Ajibata (18)
-                </q-chip>
-              </div>
-            </div>
+
           </q-card>
         </Motion>
       </div>
@@ -204,6 +178,67 @@
         </Motion>
       </div>
     </div>
+
+    <!-- Destination Modal -->
+    <q-dialog v-model="showDestModal">
+      <q-card style="width: 320px; max-width: 90vw; border-radius: 16px;" class="q-pa-sm">
+        <q-img
+          :src="selectedDest?.img"
+          height="160px"
+          fit="cover"
+          style="border-radius: 12px;"
+          class="q-mb-sm"
+        />
+
+        <q-card-section class="q-pa-sm q-pt-none">
+          <div class="text-h6 text-weight-bolder text-grey-10 q-mb-xs" style="line-height: 1.2;">
+            {{ selectedDest?.name }}
+          </div>
+          <div class="row items-center q-gutter-x-sm q-mb-sm">
+            <span
+              class="ref-status-dot"
+              :class="(selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis') ? 'bg-red' : (selectedDest?.status === 'Perlu Perhatian' ? 'bg-orange' : 'bg-green')"
+            ></span>
+            <span class="text-weight-bold text-grey-10 text-subtitle2" style="font-size: 13px;">
+              {{ selectedDest?.status === 'Perlu Penanganan' || selectedDest?.status === 'Kritis' ? 'Perlu Penanganan' : (selectedDest?.status === 'Perlu Perhatian' ? 'Perlu Perhatian' : 'Aman') }}
+            </span>
+          </div>
+
+          <div class="text-grey-6 text-caption q-mb-sm" style="font-size: 12px;">
+            {{ selectedDestReports.length }} laporan terbaru
+          </div>
+
+          <q-scroll-area
+            horizontal
+            style="height: 100px; width: 100%;"
+            class="q-mb-sm"
+            v-if="selectedDestReports.length > 0"
+          >
+            <div class="row no-wrap q-gutter-x-sm">
+              <q-img
+                v-for="(report, idx) in selectedDestReports"
+                :key="idx"
+                :src="'http://127.0.0.1:5000/uploads/' + report.photo_path"
+                style="width: 96px; height: 96px; border-radius: 8px; flex: 0 0 auto;"
+              />
+            </div>
+          </q-scroll-area>
+        </q-card-section>
+
+        <q-card-actions align="center" class="q-px-sm q-pb-sm q-pt-none">
+          <q-btn
+            outline
+            rounded
+            color="teal-8"
+            class="text-weight-bold full-width"
+            label="Lihat Detail"
+            to="/admin/monitoring"
+            v-close-popup
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -219,23 +254,80 @@ const trendFilter = ref('harian')
 const totalReports = ref(0)
 const recentReports = ref([])
 const mapDestinations = ref([])
+const mapReports = ref([])
 
-const rawDataSets = {
-  harian: {
-    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
-    values: [85, 62, 18, 48, 42, 54, 92],
-  },
-  mingguan: {
-    labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
-    values: [40, 65, 85, 30],
-  },
-  bulanan: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
-    values: [50, 75, 30, 90, 60, 85],
-  },
-}
+const showDestModal = ref(false)
+const selectedDest = ref(null)
+const selectedDestReports = ref([])
+const carouselSlide = ref(0)
 
-const currentLabels = computed(() => rawDataSets[trendFilter.value].labels)
+const dynamicTrendData = computed(() => {
+  const reports = mapReports.value || []
+  const now = new Date()
+
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
+  const harianLabels = []
+  const harianValues = [0, 0, 0, 0, 0, 0, 0]
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    harianLabels.push(days[d.getDay()])
+  }
+
+  const mingguanLabels = ['3 Mgg Lalu', '2 Mgg Lalu', '1 Mgg Lalu', 'Minggu Ini']
+  const mingguanValues = [0, 0, 0, 0]
+
+  const bulananLabels = []
+  const bulananValues = [0, 0, 0, 0, 0, 0]
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    bulananLabels.push(months[d.getMonth()])
+  }
+
+  reports.forEach(r => {
+    if (!r.created_at) return
+    // Ensure we handle the timezone properly if needed, but local browser time is fine
+    const d = new Date(r.created_at)
+
+    // Harian diff
+    const diffDays = Math.floor((startOfDay(now) - startOfDay(d)) / (1000 * 60 * 60 * 24))
+    if (diffDays >= 0 && diffDays < 7) {
+      harianValues[6 - diffDays]++
+    }
+
+    // Mingguan diff
+    const diffWeeks = Math.floor(diffDays / 7)
+    if (diffWeeks >= 0 && diffWeeks < 4) {
+      mingguanValues[3 - diffWeeks]++
+    }
+
+    // Bulanan diff
+    const diffMonths = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
+    if (diffMonths >= 0 && diffMonths < 6) {
+      bulananValues[5 - diffMonths]++
+    }
+  })
+
+  return {
+    harian: { labels: harianLabels, values: harianValues },
+    mingguan: { labels: mingguanLabels, values: mingguanValues },
+    bulanan: { labels: bulananLabels, values: bulananValues }
+  }
+})
+
+const trendPercentage = computed(() => {
+  const data = dynamicTrendData.value[trendFilter.value].values
+  if (data.length < 2) return 0
+  const current = data[data.length - 1]
+  const previous = data[data.length - 2]
+  if (previous === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - previous) / previous) * 100)
+})
+
+const currentLabels = computed(() => dynamicTrendData.value[trendFilter.value].labels)
 
 const chartOptions = computed(() => ({
   chart: {
@@ -312,7 +404,7 @@ const chartOptions = computed(() => ({
 const chartSeries = computed(() => [
   {
     name: 'Jumlah Laporan',
-    data: rawDataSets[trendFilter.value].values,
+    data: dynamicTrendData.value[trendFilter.value].values,
   },
 ])
 
@@ -331,29 +423,107 @@ function initAdminMap() {
     maxZoom: 19,
   }).addTo(adminMap.value)
 
+  const lakePolygon = [
+    [3.05, 98.45],
+    [2.95, 98.85],
+    [2.75, 99.20],
+    [2.45, 99.25],
+    [2.25, 99.15],
+    [2.25, 98.80],
+    [2.40, 98.60],
+    [2.75, 98.50],
+  ]
+  L.polygon(lakePolygon, {
+    color: '#e53935',
+    weight: 2,
+    fillColor: '#93c5fd',
+    fillOpacity: 0.35,
+  }).addTo(adminMap.value)
+
   const destinationsList = mapDestinations.value
 
   destinationsList.forEach((d) => {
-    const marker = L.marker([d.latitude, d.longitude]).addTo(adminMap.value)
-    
-    // AI Score mapping to colors
+    // Map status to colors
     let color = 'green'
-    let status = 'Aman'
-    if (d.ai_score > 0.7) {
+    let status = d.status || 'Aman'
+    if (status === 'Perlu Penanganan' || status === 'Kritis') {
       color = 'red'
-      status = 'Kritis'
-    } else if (d.ai_score > 0.4) {
+      status = 'Perlu Penanganan' // normalize status for display
+    } else if (status === 'Perlu Perhatian') {
       color = 'orange'
-      status = 'Perlu Perhatian'
     }
-    
+
+    const hexColor = color === 'red' ? '#e53935' : color === 'orange' ? '#d97706' : '#10b981'
+
+    // Add heatmap-like circle
+    L.circle([d.latitude, d.longitude], {
+      color: hexColor,
+      fillColor: hexColor,
+      fillOpacity: 0.15,
+      weight: 1,
+      radius: 1200 // 1.2km radius for visual heatmap effect
+    }).addTo(adminMap.value)
+
+    const customIcon = L.divIcon({
+      className: 'bg-transparent',
+      html: `<svg width="32" height="48" viewBox="0 0 32 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 0C7.16344 0 0 7.16344 0 16C0 27.2 16 48 16 48C16 48 32 27.2 32 16C32 7.16344 24.8366 0 16 0ZM16 24C11.5817 24 8 20.4183 8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16C24 20.4183 20.4183 24 16 24Z" fill="${hexColor}"/></svg>`,
+      iconSize: [32, 48],
+      iconAnchor: [16, 48],
+      tooltipAnchor: [16, -24]
+    })
+
+    const marker = L.marker([d.latitude, d.longitude], { icon: customIcon }).addTo(adminMap.value)
+
+    marker.on('click', () => {
+      selectedDest.value = d
+      selectedDestReports.value = mapReports.value.filter(r => {
+        if (r.spot_id !== d.id) return false;
+
+        let stat = r.status || 'pending';
+        // Hide resolved or safe reports
+        if (stat === 'Selesai' || stat === 'Aman' || stat === 'Ditolak') return false;
+
+        // If pending, only show if it looks dirty
+        if (stat === 'pending') {
+          return r.ai_score >= 0.4;
+        }
+
+        // Otherwise show only explicit attention statuses
+        return stat === 'Perlu Penanganan' || stat === 'Kritis' || stat === 'Perlu Perhatian';
+      })
+      carouselSlide.value = 0
+      showDestModal.value = true
+    })
+
     const badgeClass =
       color === 'red' ? 'badge-red' : color === 'orange' ? 'badge-orange' : 'badge-green'
-    marker.bindTooltip(`<div class="${badgeClass}">${status} - ${d.spot_name}</div>`, {
+    marker.bindTooltip(`<div class="${badgeClass}">${status} - ${d.name}</div>`, {
       permanent: true,
       direction: 'right',
       className: 'ref-map-badge-tooltip',
     })
+  })
+
+  // Add small dots for individual reports
+  mapReports.value.forEach((report) => {
+    if (report.latitude && report.longitude) {
+      let isAman = report.ai_score < 0.4 && (!report.status || report.status === 'Aman')
+      if (isAman) return // skip drawing dots for safe reports
+
+      let reportColor = '#d97706' // Perlu Perhatian (default if not aman)
+      if (report.ai_score >= 0.7 || report.status === 'Perlu Penanganan' || report.status === 'Kritis') {
+        reportColor = '#e53935' // Kritis/Perlu Penanganan
+      }
+
+      L.circleMarker([report.latitude, report.longitude], {
+        radius: 4,
+        fillColor: reportColor,
+        color: '#ffffff',
+        weight: 1.5,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(adminMap.value)
+    }
   })
 
   setTimeout(() => {
@@ -367,18 +537,23 @@ const fetchDashboardData = async () => {
   try {
     const statsRes = await axios.get('http://127.0.0.1:5000/api/dashboard/stats', config)
     totalReports.value = statsRes.data.total_reports
-    
+
     const priorityRes = await axios.get('http://127.0.0.1:5000/api/dashboard/priority', config)
-    recentReports.value = priorityRes.data.map(r => ({
-      ...r,
-      img: 'https://picsum.photos/seed/' + r.report_id + '/200/150', // Mock image, normally from backend
-      dotClass: r.ai_score > 0.7 ? 'bg-red-6' : 'bg-orange-6',
-      statusText: r.ai_score > 0.7 ? 'Kritis' : 'Perlu Perhatian'
-    }))
-    
-    const mapRes = await axios.get('http://127.0.0.1:5000/api/dashboard/map', config)
+    recentReports.value = priorityRes.data
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map(r => ({
+        ...r,
+        img: r.photo_path ? `http://127.0.0.1:5000/uploads/${r.photo_path}` : `https://picsum.photos/seed/${r.report_id}/200/150`,
+        dotClass: r.ai_score >= 0.7 ? 'bg-red-6' : (r.ai_score >= 0.4 ? 'bg-orange-6' : 'bg-green-6'),
+        statusText: r.ai_score >= 0.7 ? 'Perlu Penanganan' : (r.ai_score >= 0.4 ? 'Perlu Perhatian' : 'Aman')
+      }))
+
+    const mapRes = await axios.get('http://127.0.0.1:5000/api/spots/')
     mapDestinations.value = mapRes.data
-    
+
+    const reportsRes = await axios.get('http://127.0.0.1:5000/api/reports/', config)
+    mapReports.value = reportsRes.data
+
   } catch(e) {
     console.error("Gagal memuat dashboard", e)
   }

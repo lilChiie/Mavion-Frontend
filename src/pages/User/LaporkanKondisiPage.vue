@@ -7,9 +7,6 @@
         :transition="{ duration: 0.6, ease: 'easeOut' }"
       >
         <div class="text-center q-mb-lg">
-          <q-chip class="bg-teal-1 text-teal-9 text-weight-bold q-px-md q-mb-sm">
-            Form Laporan Cepat
-          </q-chip>
           <h1 class="text-h3 text-weight-bolder text-grey-9 q-my-none">Laporkan Kondisi Wisata</h1>
           <p class="text-body1 text-grey-7 q-mt-sm max-width-sub">
             Ambil foto kondisi lokasi wisata menggunakan kamera perangkat Anda. AI akan menganalisis
@@ -27,7 +24,7 @@
           <div class="column gap-lg">
             <div class="form-section">
               <div class="text-subtitle1 text-weight-bold text-grey-9 q-mb-xs">
-                1. Ambil Foto dari Kamera
+                1. Ambil atau Pilih Foto
               </div>
               <div class="text-caption text-grey-6 q-mb-md">
                 Posisikan kamera ke arah lokasi sampah atau kondisi yang ingin dilaporkan.
@@ -65,18 +62,31 @@
                   />
                   <div class="text-subtitle1 text-weight-bold text-grey-8">Kamera Belum Aktif</div>
                   <div class="text-caption text-grey-6 q-mb-md">
-                    Tekan tombol di bawah untuk mengaktifkan kamera perangkat Anda
+                    Pilih metode untuk mengambil foto kondisi lokasi
                   </div>
-                  <q-btn
-                    unelevated
-                    rounded
-                    color="teal-8"
-                    icon="videocam"
-                    label="Aktifkan Kamera"
-                    class="text-weight-bold q-px-lg"
-                    no-caps
-                    @click="startCamera"
-                  />
+                  <div class="row q-gutter-md justify-center">
+                    <q-btn
+                      unelevated
+                      rounded
+                      color="teal-8"
+                      icon="photo_camera"
+                      label="Kamera"
+                      class="text-weight-bold q-px-md"
+                      no-caps
+                      @click="startCamera"
+                    />
+                    <q-btn
+                      outline
+                      rounded
+                      color="teal-8"
+                      icon="photo_library"
+                      label="Galeri"
+                      class="text-weight-bold q-px-md"
+                      no-caps
+                      @click="triggerFileInput"
+                    />
+                    <input type="file" ref="fileInputRef" accept="image/*" class="hidden" @change="onFileSelected" style="display: none" />
+                  </div>
                 </div>
 
                 <div
@@ -88,7 +98,7 @@
                 </div>
               </div>
 
-              <div class="row justify-center gap-md q-mt-md">
+              <div class="row justify-center q-gutter-md q-mt-md">
                 <q-btn
                   v-if="isCameraActive && !capturedImage"
                   unelevated
@@ -101,6 +111,17 @@
                   no-caps
                   @click="capturePhoto"
                 />
+                <q-btn
+                  v-if="isCameraActive && !capturedImage"
+                  outline
+                  rounded
+                  size="lg"
+                  color="grey-8"
+                  label="Batal"
+                  class="q-px-lg text-weight-bold"
+                  no-caps
+                  @click="stopCamera"
+                />
 
                 <q-btn
                   v-if="capturedImage"
@@ -108,10 +129,10 @@
                   rounded
                   color="grey-8"
                   icon="refresh"
-                  label="Ambil Ulang Foto"
+                  label="Ganti Foto"
                   class="q-px-lg text-weight-bold"
                   no-caps
-                  @click="retakePhoto"
+                  @click="resetImage"
                 />
               </div>
             </div>
@@ -180,13 +201,16 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { Motion } from 'motion-v'
 import axios from 'axios'
 import FooterComponent from '../../components/FooterComponent.vue'
 import ReportSuccessModal from '../../components/ReportSuccessModal.vue'
 
+const route = useRoute()
 const videoRef = ref(null)
 const canvasRef = ref(null)
+const fileInputRef = ref(null)
 const isCameraActive = ref(false)
 const capturedImage = ref(null)
 const catatan = ref('')
@@ -201,7 +225,10 @@ onMounted(async () => {
   try {
     const res = await axios.get('http://127.0.0.1:5000/api/spots/')
     spots.value = res.data
-    if(spots.value.length > 0) {
+
+    if (route.query.spot_id) {
+      selectedSpot.value = parseInt(route.query.spot_id)
+    } else if(spots.value.length > 0) {
       selectedSpot.value = spots.value[0].id
     }
   } catch (error) {
@@ -240,9 +267,29 @@ function capturePhoto() {
   stopCamera()
 }
 
-function retakePhoto() {
+function resetImage() {
   capturedImage.value = null
-  startCamera()
+  stopCamera()
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+function triggerFileInput() {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+function onFileSelected(event) {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      capturedImage.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
 }
 
 function stopCamera() {
@@ -268,27 +315,42 @@ async function submitReport() {
     alert("Harap ambil foto dan pilih lokasi terlebih dahulu!")
     return
   }
-  
+
   submitting.value = true
-  
+
   try {
     const blob = dataURLtoBlob(capturedImage.value)
     const formData = new FormData()
     formData.append('photo', blob, 'report.jpg')
     formData.append('spot_id', selectedSpot.value)
-    
-    // Using mock coordinates for Danau Toba area since we can't easily access GPS here
-    formData.append('latitude', '2.5855')
-    formData.append('longitude', '98.7904')
+
+    let lat = '2.5855'
+    let lng = '98.7904'
+
+    // Attempt to get real GPS coordinates
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+        })
+        lat = position.coords.latitude.toString()
+        lng = position.coords.longitude.toString()
+      } catch (e) {
+        console.warn("Gagal mendapatkan lokasi, menggunakan lokasi default (Toba)", e)
+      }
+    }
+
+    formData.append('latitude', lat)
+    formData.append('longitude', lng)
     // Option: append catatan if backend supports it
-    // formData.append('notes', catatan.value)
-    
+    formData.append('notes', catatan.value)
+
     await axios.post('http://127.0.0.1:5000/api/reports/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    
+
     submitting.value = false
     successModal.value = true
   } catch(error) {
